@@ -1,0 +1,54 @@
+# Dart & Flutter 패키지 기본 .gitignore
+
+# 빌드/캐시 파일
+build/
+.dart_tool/
+.packages
+.pub/
+*.sqlite3
+
+# IDE/에디터 파일
+.idea/
+.vscode/
+*.swp
+
+# OS 및 기타 불필요 파일
+.DS_Store
+Thumbs.db
+
+# 테스팅/coverage
+coverage/
+test-results/
+
+# 환경 파일 및 실제 토큰
+.env
+*.log
+
+# generated files
+*.generated.*
+*.g.dart
+*.iml
+
+# flutter/dart package 배포 관련
+pubspec.lock
+
+# 분석/정적 검사 결과
+.mypy_cache/
+.pytest_cache/
+.eggs/
+
+# Windows
+*.exe
+*.dll
+
+# Linux/Mac
+*.so
+
+# 기타 임시 파일
+*.tmp
+
+# 추가
+*.env
+output/
+example/
+demo.dart

@@ -1,0 +1,130 @@
+import 'dart:io';
+import 'dart:convert';
+import 'package:github_analyzer/src/common/constants.dart';
+
+class GithubAnalyzerConfig {
+  final String? githubToken;
+  final List<String> excludePatterns;
+  final List<String> includePatterns;
+  final int maxFileSize;
+  final bool enableCache;
+  final String cacheDirectory;
+  final Duration cacheDuration;
+  final bool verbose;
+  final int maxConcurrentRequests;
+  final bool enableIsolatePool;
+  final int isolatePoolSize;
+  final int maxRetries;
+  final Duration retryDelay;
+
+  GithubAnalyzerConfig({
+    this.githubToken,
+    List<String>? excludePatterns,
+    this.includePatterns = const [],
+    this.maxFileSize = kDefaultMaxFileSize,
+    this.enableCache = true,
+    String? cacheDirectory,
+    this.cacheDuration = kDefaultCacheDuration,
+    this.verbose = false,
+    this.maxConcurrentRequests = kDefaultMaxConcurrentRequests,
+    this.enableIsolatePool = true,
+    int? isolatePoolSize,
+    this.maxRetries = kDefaultMaxRetries,
+    this.retryDelay = const Duration(seconds: 2),
+  }) : excludePatterns = excludePatterns ?? kDefaultExcludePatterns,
+       cacheDirectory = cacheDirectory ?? '.github_analyzer_cache',
+       isolatePoolSize = isolatePoolSize ?? (Platform.numberOfProcessors);
+
+  factory GithubAnalyzerConfig.fromFile(String path) {
+    final file = File(path);
+    if (!file.existsSync()) {
+      throw Exception('Config file not found: $path');
+    }
+    final content = file.readAsStringSync();
+    final json = jsonDecode(content) as Map<String, dynamic>;
+    return GithubAnalyzerConfig.fromJson(json);
+  }
+
+  factory GithubAnalyzerConfig.fromJson(Map<String, dynamic> json) {
+    return GithubAnalyzerConfig(
+      githubToken: json['githubToken'] as String?,
+      excludePatterns: (json['excludePatterns'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList(),
+      includePatterns:
+          (json['includePatterns'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const [],
+      maxFileSize: json['maxFileSize'] as int? ?? kDefaultMaxFileSize,
+      enableCache: json['enableCache'] as bool? ?? true,
+      cacheDirectory:
+          json['cacheDirectory'] as String? ?? '.github_analyzer_cache',
+      cacheDuration: json['cacheDuration'] != null
+          ? Duration(seconds: json['cacheDuration'] as int)
+          : kDefaultCacheDuration,
+      verbose: json['verbose'] as bool? ?? false,
+      maxConcurrentRequests:
+          json['maxConcurrentRequests'] as int? ??
+          kDefaultMaxConcurrentRequests,
+      enableIsolatePool: json['enableIsolatePool'] as bool? ?? true,
+      isolatePoolSize:
+          json['isolatePoolSize'] as int? ?? Platform.numberOfProcessors,
+      maxRetries: json['max_retries'] as int? ?? kDefaultMaxRetries,
+      retryDelay: json['retry_delay_seconds'] != null
+          ? Duration(seconds: json['retry_delay_seconds'] as int)
+          : const Duration(seconds: 2),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'githubToken': githubToken,
+      'excludePatterns': excludePatterns,
+      'includePatterns': includePatterns,
+      'maxFileSize': maxFileSize,
+      'enableCache': enableCache,
+      'cacheDirectory': cacheDirectory,
+      'cacheDuration': cacheDuration.inSeconds,
+      'verbose': verbose,
+      'maxConcurrentRequests': maxConcurrentRequests,
+      'enableIsolatePool': enableIsolatePool,
+      'isolatePoolSize': isolatePoolSize,
+      'max_retries': maxRetries,
+      'retry_delay_seconds': retryDelay.inSeconds,
+    };
+  }
+
+  GithubAnalyzerConfig copyWith({
+    String? githubToken,
+    List<String>? excludePatterns,
+    List<String>? includePatterns,
+    int? maxFileSize,
+    bool? enableCache,
+    String? cacheDirectory,
+    Duration? cacheDuration,
+    bool? verbose,
+    int? maxConcurrentRequests,
+    bool? enableIsolatePool,
+    int? isolatePoolSize,
+    int? maxRetries,
+    Duration? retryDelay,
+  }) {
+    return GithubAnalyzerConfig(
+      githubToken: githubToken ?? this.githubToken,
+      excludePatterns: excludePatterns ?? this.excludePatterns,
+      includePatterns: includePatterns ?? this.includePatterns,
+      maxFileSize: maxFileSize ?? this.maxFileSize,
+      enableCache: enableCache ?? this.enableCache,
+      cacheDirectory: cacheDirectory ?? this.cacheDirectory,
+      cacheDuration: cacheDuration ?? this.cacheDuration,
+      verbose: verbose ?? this.verbose,
+      maxConcurrentRequests:
+          maxConcurrentRequests ?? this.maxConcurrentRequests,
+      enableIsolatePool: enableIsolatePool ?? this.enableIsolatePool,
+      isolatePoolSize: isolatePoolSize ?? this.isolatePoolSize,
+      maxRetries: maxRetries ?? this.maxRetries,
+      retryDelay: retryDelay ?? this.retryDelay,
+    );
+  }
+}
