@@ -1,6 +1,7 @@
 import 'package:github_analyzer/src/common/config.dart';
 import 'package:github_analyzer/src/common/logger.dart';
 import 'package:github_analyzer/src/core/repository_analyzer.dart';
+import 'package:github_analyzer/src/common/utils/directory_tree_generator.dart';
 import 'package:github_analyzer/src/common/utils/file_utils.dart';
 import 'package:github_analyzer/src/models/analysis_result.dart';
 import 'package:github_analyzer/src/models/repository_metadata.dart';
@@ -41,6 +42,9 @@ class LocalAnalyzerService {
         'Previous analysis result found, performing incremental analysis.',
       );
       try {
+        // Note: Incremental analysis will re-use the directory tree from the
+        // previous result for now. A more sophisticated approach could update
+        // the tree based on changes, but that adds significant complexity.
         final result = await _incrementalAnalyzer.analyze(
           directoryPath,
           previousResult: previousResult,
@@ -61,6 +65,8 @@ class LocalAnalyzerService {
     logger.info('Performing full analysis.');
     final files = await _repositoryAnalyzer.analyzeDirectory(directoryPath);
     final statistics = AnalysisStatistics.fromSourceFiles(files);
+    final filePaths = files.map((f) => f.path).toList();
+    final directoryTree = DirectoryTreeGenerator.generate(filePaths);
 
     final primaryLanguage = statistics.languageDistribution.isEmpty
         ? null
@@ -80,7 +86,7 @@ class LocalAnalyzerService {
       forks: 0,
       fileCount: files.length,
       commitSha: null,
-      directoryTree: '', // Tree is not generated for local analysis currently.
+      directoryTree: directoryTree,
     );
 
     final mainFiles = identifyMainFiles(files);

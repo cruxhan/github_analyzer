@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:archive/archive.dart';
 import 'package:github_analyzer/src/common/config.dart';
 import 'package:github_analyzer/src/common/logger.dart';
+import 'package:github_analyzer/src/common/utils/directory_tree_generator.dart';
 import 'package:github_analyzer/src/common/utils/file_utils.dart';
 import 'package:github_analyzer/src/common/utils/github_utils.dart';
 import 'package:github_analyzer/src/common/errors/analyzer_exception.dart';
@@ -170,6 +171,8 @@ class RemoteAnalyzerService {
       );
 
       final files = await repositoryAnalyzer.analyzeArchive(archive);
+      final filePaths = files.map((f) => f.path).toList();
+      final directoryTree = DirectoryTreeGenerator.generate(filePaths);
 
       _emitProgress(
         AnalysisProgress(
@@ -189,6 +192,7 @@ class RemoteAnalyzerService {
         metadata: metadata.copyWith(
           fileCount: files.length,
           languages: statistics.languageDistribution.keys.toList(),
+          directoryTree: directoryTree,
         ),
         files: files,
         statistics: statistics,
