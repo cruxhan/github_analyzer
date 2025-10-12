@@ -26,7 +26,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  github_analyzer: ^0.0.1 # Replace with the latest version
+  github_analyzer: ^0.0.2 # Replace with the latest version
 ```
 
 Then, install it by running:
@@ -46,7 +46,7 @@ void main() async {
   try {
     // 1. Analyze a repository with just one line of code.
     final result = await analyze(
-      '[https://github.com/flutter/flutter](https://github.com/flutter/flutter)',
+      'https://github.com/flutter/flutter',
       // Optional: Get real-time progress updates.
       progressCallback: (progress) {
         final percentage = (progress.progress * 100).toStringAsFixed(1);
@@ -114,7 +114,7 @@ final config = GithubAnalyzerConfig(
 );
 
 final result = await analyze(
-  '[https://github.com/your/repo](https://github.com/your/repo)',
+  'https://github.com/your/repo',
   config: config,
 );
 ```
@@ -141,7 +141,7 @@ final analyzer = GithubAnalyzer(
 );
 
 // 4. Use the analyzer instance.
-final result = await analyzer.analyze('[https://github.com/your/repo](https://github.com/your/repo)');
+final result = await analyzer.analyze('https://github.com/your/repo');
 
 // 5. Remember to dispose of resources.
 await analyzer.dispose();

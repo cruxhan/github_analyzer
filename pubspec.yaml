@@ -1,6 +1,6 @@
 name: github_analyzer
 description: "Analyze GitHub repositories and generate AI context for LLMs"
-version: 0.0.1
+version: 0.0.2
 
 homepage: https://github.com/cruxhan/github_analyzer
 repository: https://github.com/cruxhan/github_analyzer
@@ -9,7 +9,6 @@ issue_tracker: https://github.com/cruxhan/github_analyzer/issues
 environment:
   sdk: '>=3.0.0 <4.0.0'
 
-# Dependencies for the package
 dependencies:
   archive: ^4.0.0
   crypto: ^3.0.3
@@ -18,7 +17,6 @@ dependencies:
   logging: ^1.2.0
   path: ^1.9.0
 
-# Development dependencies
 dev_dependencies:
   build_runner: ^2.4.9
   mockito: ^5.4.4
