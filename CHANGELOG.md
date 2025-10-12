@@ -1,3 +1,7 @@
+## 0.0.4
+
+* [Fix] Addressed issues from v0.0.3 and introduced new features.
+
 ## 0.0.3
 
 * [Fix] Addressed issues from v0.0.2 and introduced new features.

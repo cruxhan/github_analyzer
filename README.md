@@ -30,7 +30,7 @@ Or add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  github_analyzer: ^0.0.3 # Replace with the latest version
+  github_analyzer: ^0.0.4 # Replace with the latest version
 ```
 
 Then, install it by running:

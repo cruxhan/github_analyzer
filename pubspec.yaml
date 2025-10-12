@@ -1,6 +1,6 @@
 name: github_analyzer
 description: "Analyze GitHub repositories and generate AI context for LLMs"
-version: 0.0.3
+version: 0.0.4
 
 homepage: https://github.com/cruxhan/github_analyzer
 repository: https://github.com/cruxhan/github_analyzer
