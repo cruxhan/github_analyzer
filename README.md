@@ -9,14 +9,14 @@ This tool is designed to extract comprehensive metadata, generate detailed stati
 
 ## ✨ Key Features
 
--   **Dual Analysis Modes**: Analyze repositories from a **remote GitHub URL** or a **local file path** with a single, unified API.
+-   **Simple & Powerful API**: Analyze any public repository with a single function call. No complex setup required.
+-   **Dual Analysis Modes**: Analyze repositories from a **remote GitHub URL** or a **local file path**.
 -   **Comprehensive Reports**: Generates a detailed `AnalysisResult` object containing repository metadata, file-by-file analysis, language distribution, dependency detection, and more.
 -   **Smart Caching**: Avoids re-analyzing unchanged remote repositories by using a commit-based caching system, saving time and API calls.
--   **High-Performance Local Scans**: Utilizes Dart Isolates for parallel processing of local files, ensuring fast and efficient analysis even on large codebases.
+-   **High-Performance Scans**: Utilizes Dart Isolates for parallel processing of local files, ensuring fast and efficient analysis even on large codebases.
 -   **Incremental Analysis**: For local repositories, it can perform an incremental analysis by comparing against a previous result, processing only the files that have been added, modified, or deleted.
--   **Real-time Progress**: Monitor the analysis progress through a `Stream`, perfect for providing feedback in a UI or CLI.
--   **Customizable Output**: Includes utility classes to generate analysis summaries in different formats, such as a comprehensive Markdown file (`ContextGenerator`) or a compact file set (`CfsWriter`) for LLMs.
--   **Configurable**: Fine-tune the analysis by setting custom exclusion patterns, max file size, cache duration, and more.
+-   **Real-time Progress**: Monitor the analysis progress through a callback, perfect for providing feedback in a UI or CLI.
+-   **Customizable**: Fine-tune the analysis with a rich configuration object, or use dependency injection for complete control.
 
 ## 🚀 Getting Started
 
@@ -26,7 +26,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  github_analyzer: ^0.0.1
+  github_analyzer: ^0.0.1 # Replace with the latest version
 ```
 
 Then, install it by running:
@@ -37,89 +37,71 @@ dart pub get
 
 ### 2. Basic Usage
 
-Here are a few examples of how to use the `github_analyzer`.
-
-#### Analyzing a Remote Repository
+Analyzing a remote repository is as simple as a single function call.
 
 ```dart
 import 'package:github_analyzer/github_analyzer.dart';
 
 void main() async {
-  // Initialize the analyzer
-  final analyzer = GithubAnalyzer();
-
-  // Listen for progress updates
-  analyzer.progressStream.listen((progress) {
-    print('[${progress.phase.name}] ${progress.percentage.toStringAsFixed(1)}% - ${progress.message}');
-  });
-
   try {
-    // Analyze a remote repository
-    final result = await analyzer.analyzeRemote(
-      repositoryUrl: 'https://github.com/flutter/flutter',
+    // 1. Analyze a repository with just one line of code.
+    final result = await analyze(
+      '[https://github.com/flutter/flutter](https://github.com/flutter/flutter)',
+      // Optional: Get real-time progress updates.
+      progressCallback: (progress) {
+        final percentage = (progress.progress * 100).toStringAsFixed(1);
+        print('[${progress.phase.name}] $percentage% - ${progress.message}');
+      },
+      // Optional: Enable verbose logging for debugging.
+      verbose: true,
     );
 
-    // Print some results
+    // 2. Use the results.
     print('\nAnalysis Complete!');
     print('Repository: ${result.metadata.fullName}');
     print('Primary Language: ${result.metadata.language}');
     print('Total Files Analyzed: ${result.files.length}');
     print('Total Lines of Code: ${result.statistics.totalLines}');
 
-    // Generate a detailed context file
+    // 3. Generate a detailed context file for LLMs or documentation.
     await ContextGenerator.generate(result, './flutter_analysis_context.md');
     print('\nContext file generated at ./flutter_analysis_context.md');
 
   } catch (e) {
     print('An error occurred during analysis: $e');
-  } finally {
-    // Clean up resources
-    analyzer.dispose();
   }
 }
 ```
 
-#### Analyzing a Local Directory
+## ⚙️ Advanced Usage
+
+### Analyzing a Local Directory
+
+To analyze a project on your local machine, simply provide the file path.
 
 ```dart
 import 'package:github_analyzer/github_analyzer.dart';
 
 void main() async {
-  final analyzer = GithubAnalyzer();
-
-  try {
-    // Provide the path to your local project directory
-    const String localPath = '/path/to/your/project';
-
-    final result = await analyzer.analyzeLocal(localPath);
-
-    print('Analysis Complete for local directory!');
-    print('Project Name: ${result.metadata.name}');
-    print('Total Files: ${result.statistics.totalFiles}');
-
-    // You can also perform an incremental analysis
-    // final updatedResult = await analyzer.analyzeLocal(localPath, previousResult: result);
-
-  } catch (e) {
-    print('An error occurred: $e');
-  } finally {
-    analyzer.dispose();
-  }
+  // The top-level 'analyze' function works for local paths too.
+  final result = await analyze('/path/to/your/project');
+  print('Analysis of local directory complete!');
+  print('Project Name: ${result.metadata.name}');
 }
 ```
 
-## ⚙️ Configuration
+### Custom Configuration
 
-You can customize the analyzer's behavior by passing a `GithubAnalyzerConfig` object during initialization.
+For more control, you can pass a `GithubAnalyzerConfig` object to the `analyze` function.
 
 ```dart
 final config = GithubAnalyzerConfig(
   // Provide a GitHub token for higher API rate limits
-  githubToken: 'YOUR_GITHUB_TOKEN',
-  
+  githubToken: 'YOUR_GITHUB_TOKEN', // Recommended for frequent use
+
   // Exclude additional patterns from analysis
   excludePatterns: [
-    ...kDefaultExcludePatterns, // Keep the defaults
+    ...kDefaultExcludePatterns, // It's good practice to keep the defaults
     '**/*.g.dart',
     '**/test_data/**',
   ],
@@ -131,7 +113,38 @@ final config = GithubAnalyzerConfig(
   enableCache: false,
 );
 
-final analyzer = GithubAnalyzer(config: config);
+final result = await analyze(
+  '[https://github.com/your/repo](https://github.com/your/repo)',
+  config: config,
+);
+```
+
+### Full Control with Dependency Injection
+
+For maximum flexibility (e.g., in a larger application or for extensive testing), you can construct the `GithubAnalyzer` class by manually creating and injecting its dependencies.
+
+```dart
+// 1. Create a configuration object.
+final config = GithubAnalyzerConfig();
+
+// 2. Manually create all service dependencies.
+final httpClientManager = HttpClientManager();
+final apiProvider = GithubApiProvider(httpClientManager: httpClientManager, token: config.githubToken);
+// ... create other services like ZipDownloader, CacheService, etc.
+
+// 3. Inject dependencies into the GithubAnalyzer constructor.
+final analyzer = GithubAnalyzer(
+  config: config,
+  httpClientManager: httpClientManager,
+  apiProvider: apiProvider,
+  // ... inject all other required services
+);
+
+// 4. Use the analyzer instance.
+final result = await analyzer.analyze('[https://github.com/your/repo](https://github.com/your/repo)');
+
+// 5. Remember to dispose of resources.
+await analyzer.dispose();
 ```
 
 ## 🤝 Contributing
