@@ -22,11 +22,15 @@ This tool is designed to extract comprehensive metadata, generate detailed stati
 
 ### 1. Installation
 
-Add this to your package's `pubspec.yaml` file:
+```bash
+flutter pub add github_analyzer
+```
+
+Or add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  github_analyzer: ^0.0.2 # Replace with the latest version
+  github_analyzer: ^0.0.3 # Replace with the latest version
 ```
 
 Then, install it by running:

@@ -1,6 +1,11 @@
+## 0.0.3
+
+* [Fix] Addressed issues from v0.0.2 and introduced new features.
+
 ## 0.0.2
 
 * **Major Refactoring for Usability and Maintainability.**
+
 * **Added Top-Level `analyze` Function**: Drastically simplified the API. Users can now analyze repositories with a single function call, without needing to manually set up dependencies.
 * **Implemented Dependency Injection**: Refactored the `GithubAnalyzer` class to accept dependencies via its constructor, improving modularity and testability.
 * **Integrated Standard Logging Package**: Replaced the custom logger with the standard Dart `logging` package for more robust and flexible logging.
