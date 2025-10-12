@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:github_analyzer/src/common/constants.dart';
 import 'package:github_analyzer/src/models/source_file.dart';
+import 'package:glob/glob.dart';
 
 String formatFileSize(int bytes) {
   if (bytes < 1024) return '$bytes B';
@@ -12,60 +13,20 @@ String formatFileSize(int bytes) {
   return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
 }
 
-bool shouldExclude(String filePath, List<String>? excludePatterns) {
-  final patterns = excludePatterns ?? kDefaultExcludePatterns;
-  final normalizedPath = filePath.replaceAll('\\', '/');
-
+/// Matches a file path against a list of glob patterns using the `glob` package.
+bool _matchesAnyPattern(String filePath, List<String> patterns) {
+  final normalizedPath = path.normalize(filePath).replaceAll('\\', '/');
   for (final pattern in patterns) {
-    if (_matchPattern(normalizedPath, pattern)) {
+    if (Glob(pattern).matches(normalizedPath)) {
       return true;
     }
   }
-
   return false;
 }
 
-bool _matchPattern(String filePath, String pattern) {
-  var p = pattern.replaceAll('\\', '/');
-
-  p = p.replaceAllMapped(RegExp(r'[.+^${}()|[\]\\]'), (match) {
-    return '\\${match.group(0)}';
-  });
-
-  p = p.replaceAll('**/', '__DOUBLESTAR__/');
-  p = p.replaceAll('**', '__DOUBLESTAR__');
-  p = p.replaceAll('*', '[^/]*');
-  p = p.replaceAll('?', '[^/]');
-  p = p.replaceAll('__DOUBLESTAR__/', '(.*/)?');
-  p = p.replaceAll('__DOUBLESTAR__', '.*');
-
-  final regexPattern = '^$p\$';
-
-  try {
-    final regex = RegExp(regexPattern);
-    if (regex.hasMatch(filePath)) return true;
-    if (regex.hasMatch('/$filePath')) return true;
-
-    if (!pattern.contains('/')) {
-      final parts = filePath.split('/');
-      for (final part in parts) {
-        if (RegExp('^${p.replaceAll('/', '')}\$').hasMatch(part)) {
-          return true;
-        }
-      }
-    }
-
-    if (pattern.endsWith('/**')) {
-      final dirPattern = p.replaceAll(RegExp(r'/\(\.\*/\)\?$'), '');
-      if (RegExp('^$dirPattern(/|\$)').hasMatch(filePath)) {
-        return true;
-      }
-    }
-
-    return false;
-  } catch (e) {
-    return false;
-  }
+bool shouldExclude(String filePath, List<String>? excludePatterns) {
+  return _matchesAnyPattern(
+      filePath, excludePatterns ?? kDefaultExcludePatterns);
 }
 
 bool isBinaryFile(String filePath) {
@@ -74,40 +35,16 @@ bool isBinaryFile(String filePath) {
 }
 
 bool isConfigurationFile(String filePath) {
-  final normalizedPath = filePath.replaceAll('\\', '/');
-  for (final pattern in kConfigurationPatterns) {
-    if (_matchSimplePattern(normalizedPath, pattern)) {
-      return true;
-    }
-  }
-  return false;
+  return _matchesAnyPattern(filePath, kConfigurationPatterns);
 }
 
 bool isDocumentationFile(String filePath) {
-  final normalizedPath = filePath.replaceAll('\\', '/');
-  for (final pattern in kDocumentationPatterns) {
-    if (_matchSimplePattern(normalizedPath, pattern)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool _matchSimplePattern(String filePath, String pattern) {
-  final regexPattern = pattern
-      .replaceAll('.', r'\.')
-      .replaceAll('**', r'.*')
-      .replaceAll('*', r'[^/]*');
-
-  try {
-    return RegExp('^$regexPattern\$').hasMatch(filePath);
-  } catch (e) {
-    return false;
-  }
+  return _matchesAnyPattern(filePath, kDocumentationPatterns);
 }
 
 List<String> identifyMainFiles(List<SourceFile> files) {
   final mainFiles = <String>[];
+  // ... (이하 동일)
   final mainPatterns = [
     'main.dart',
     'main.py',
@@ -140,6 +77,7 @@ List<String> identifyMainFiles(List<SourceFile> files) {
 
 Map<String, List<String>> extractDependencies(List<SourceFile> files) {
   final dependencies = <String, List<String>>{};
+  // ... (이하 동일)
   for (final file in files) {
     if (file.content == null) continue;
     final fileName = path.basename(file.path);
@@ -171,6 +109,7 @@ Map<String, List<String>> extractDependencies(List<SourceFile> files) {
 }
 
 Future<String?> readFileContent(File file, int maxFileSize) async {
+  // ... (이하 동일)
   final stat = await file.stat();
   if (stat.size > maxFileSize) {
     return null;
