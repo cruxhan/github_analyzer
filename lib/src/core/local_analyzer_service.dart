@@ -8,24 +8,28 @@ import 'package:github_analyzer/src/models/analysis_statistics.dart';
 import 'package:github_analyzer/src/core/incremental_analyzer.dart';
 import 'package:path/path.dart' as path;
 
+/// Service responsible for analyzing local file directories.
+///
+/// It can perform a full analysis or an incremental analysis if a previous
+/// result is provided.
 class LocalAnalyzerService {
   final GithubAnalyzerConfig config;
-  final AnalyzerLogger logger;
   final RepositoryAnalyzer _repositoryAnalyzer;
   final IncrementalAnalyzer _incrementalAnalyzer;
 
+  /// Creates an instance of [LocalAnalyzerService].
   LocalAnalyzerService({
     required this.config,
-    required this.logger,
     RepositoryAnalyzer? repositoryAnalyzer,
-  }) : _repositoryAnalyzer =
-           repositoryAnalyzer ??
-           RepositoryAnalyzer(config: config, logger: logger),
-       _incrementalAnalyzer = IncrementalAnalyzer(
-         config: config,
-         logger: logger,
-       );
+  })  : _repositoryAnalyzer =
+            repositoryAnalyzer ?? RepositoryAnalyzer(config: config),
+        _incrementalAnalyzer = IncrementalAnalyzer(config: config);
 
+  /// Analyzes a local directory.
+  ///
+  /// If [previousResult] is provided, it performs an incremental analysis
+  /// by comparing the current state with the previous one. Otherwise, it
+  /// performs a full analysis.
   Future<AnalysisResult> analyze(
     String directoryPath, {
     AnalysisResult? previousResult,
@@ -45,9 +49,11 @@ class LocalAnalyzerService {
           'Incremental analysis completed: ${result.files.length} files analyzed',
         );
         return result;
-      } catch (e) {
+      } catch (e, stackTrace) {
         logger.warning(
-          'Incremental analysis failed: $e. Performing full analysis instead.',
+          'Incremental analysis failed. Performing full analysis instead.',
+          e,
+          stackTrace,
         );
       }
     }
@@ -59,8 +65,8 @@ class LocalAnalyzerService {
     final primaryLanguage = statistics.languageDistribution.isEmpty
         ? null
         : statistics.languageDistribution.entries
-              .reduce((a, b) => a.value > b.value ? a : b)
-              .key;
+            .reduce((a, b) => a.value > b.value ? a : b)
+            .key;
 
     final metadata = RepositoryMetadata(
       name: path.basename(directoryPath),
@@ -74,7 +80,7 @@ class LocalAnalyzerService {
       forks: 0,
       fileCount: files.length,
       commitSha: null,
-      directoryTree: '',
+      directoryTree: '', // Tree is not generated for local analysis currently.
     );
 
     final mainFiles = identifyMainFiles(files);

@@ -7,32 +7,31 @@ import 'package:github_analyzer/src/infrastructure/interfaces/i_http_client_mana
 /// An HTTP client manager using the dio package for robust networking.
 /// It handles retries, timeouts, and concurrent requests automatically.
 class HttpClientManager implements IHttpClientManager {
-  final AnalyzerLogger logger;
   final Dio _dio;
 
+  /// Creates an instance of [HttpClientManager].
   HttpClientManager({
-    required this.logger,
     Duration requestTimeout = const Duration(seconds: 30),
     int maxConcurrentRequests = 10,
     int maxRetries = 3,
   }) : _dio = Dio(
-         BaseOptions(
-           connectTimeout: requestTimeout,
-           receiveTimeout: requestTimeout,
-         ),
-       ) {
+          BaseOptions(
+            connectTimeout: requestTimeout,
+            receiveTimeout: requestTimeout,
+          ),
+        ) {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
-          logger.debug('Request: ${options.method} ${options.uri}');
+          logger.finer('Request: ${options.method} ${options.uri}');
           return handler.next(options);
         },
         onResponse: (response, handler) {
-          logger.debug('Response: ${response.statusCode}');
+          logger.finer('Response: ${response.statusCode}');
           return handler.next(response);
         },
         onError: (DioException e, handler) async {
-          logger.warning('Request Error: ${e.message}');
+          logger.warning('Request Error: ${e.message}', e, e.stackTrace);
           // Simple retry logic, dio has more advanced retry packages if needed.
           if (e.type == DioExceptionType.connectionTimeout ||
               e.type == DioExceptionType.receiveTimeout ||
@@ -75,8 +74,9 @@ class HttpClientManager implements IHttpClientManager {
         options: Options(headers: headers, responseType: responseType),
       );
       return response;
-    } on DioException catch (e) {
-      throw Exception('Failed to GET $uri: ${e.message}');
+    } on DioException {
+      // Re-throw the original DioException to preserve status codes and other details.
+      rethrow;
     }
   }
 
@@ -93,8 +93,9 @@ class HttpClientManager implements IHttpClientManager {
         options: Options(headers: headers),
       );
       return response;
-    } on DioException catch (e) {
-      throw Exception('Failed to POST $uri: ${e.message}');
+    } on DioException {
+      // Re-throw the original DioException.
+      rethrow;
     }
   }
 

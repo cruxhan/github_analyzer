@@ -2,6 +2,11 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:github_analyzer/src/common/constants.dart';
 
+/// Configuration class for the GithubAnalyzer.
+///
+/// This class holds all the settings that control the behavior of the analysis,
+/// such as API tokens, file exclusion patterns, cache settings, and concurrency
+/// limits.
 class GithubAnalyzerConfig {
   final String? githubToken;
   final List<String> excludePatterns;
@@ -10,13 +15,13 @@ class GithubAnalyzerConfig {
   final bool enableCache;
   final String cacheDirectory;
   final Duration cacheDuration;
-  final bool verbose;
   final int maxConcurrentRequests;
   final bool enableIsolatePool;
   final int isolatePoolSize;
   final int maxRetries;
   final Duration retryDelay;
 
+  /// Creates an instance of [GithubAnalyzerConfig].
   GithubAnalyzerConfig({
     this.githubToken,
     List<String>? excludePatterns,
@@ -25,16 +30,16 @@ class GithubAnalyzerConfig {
     this.enableCache = true,
     String? cacheDirectory,
     this.cacheDuration = kDefaultCacheDuration,
-    this.verbose = false,
     this.maxConcurrentRequests = kDefaultMaxConcurrentRequests,
     this.enableIsolatePool = true,
     int? isolatePoolSize,
     this.maxRetries = kDefaultMaxRetries,
     this.retryDelay = const Duration(seconds: 2),
-  }) : excludePatterns = excludePatterns ?? kDefaultExcludePatterns,
-       cacheDirectory = cacheDirectory ?? '.github_analyzer_cache',
-       isolatePoolSize = isolatePoolSize ?? (Platform.numberOfProcessors);
+  })  : excludePatterns = excludePatterns ?? kDefaultExcludePatterns,
+        cacheDirectory = cacheDirectory ?? '.github_analyzer_cache',
+        isolatePoolSize = isolatePoolSize ?? (Platform.numberOfProcessors);
 
+  /// Creates a [GithubAnalyzerConfig] from a JSON file.
   factory GithubAnalyzerConfig.fromFile(String path) {
     final file = File(path);
     if (!file.existsSync()) {
@@ -45,14 +50,14 @@ class GithubAnalyzerConfig {
     return GithubAnalyzerConfig.fromJson(json);
   }
 
+  /// Creates a [GithubAnalyzerConfig] from a JSON map.
   factory GithubAnalyzerConfig.fromJson(Map<String, dynamic> json) {
     return GithubAnalyzerConfig(
       githubToken: json['githubToken'] as String?,
       excludePatterns: (json['excludePatterns'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
-      includePatterns:
-          (json['includePatterns'] as List<dynamic>?)
+      includePatterns: (json['includePatterns'] as List<dynamic>?)
               ?.map((e) => e as String)
               .toList() ??
           const [],
@@ -63,9 +68,7 @@ class GithubAnalyzerConfig {
       cacheDuration: json['cacheDuration'] != null
           ? Duration(seconds: json['cacheDuration'] as int)
           : kDefaultCacheDuration,
-      verbose: json['verbose'] as bool? ?? false,
-      maxConcurrentRequests:
-          json['maxConcurrentRequests'] as int? ??
+      maxConcurrentRequests: json['maxConcurrentRequests'] as int? ??
           kDefaultMaxConcurrentRequests,
       enableIsolatePool: json['enableIsolatePool'] as bool? ?? true,
       isolatePoolSize:
@@ -77,6 +80,7 @@ class GithubAnalyzerConfig {
     );
   }
 
+  /// Converts this config object into a JSON-compatible map.
   Map<String, dynamic> toJson() {
     return {
       'githubToken': githubToken,
@@ -86,7 +90,6 @@ class GithubAnalyzerConfig {
       'enableCache': enableCache,
       'cacheDirectory': cacheDirectory,
       'cacheDuration': cacheDuration.inSeconds,
-      'verbose': verbose,
       'maxConcurrentRequests': maxConcurrentRequests,
       'enableIsolatePool': enableIsolatePool,
       'isolatePoolSize': isolatePoolSize,
@@ -95,6 +98,7 @@ class GithubAnalyzerConfig {
     };
   }
 
+  /// Creates a copy of this config object with the given fields replaced.
   GithubAnalyzerConfig copyWith({
     String? githubToken,
     List<String>? excludePatterns,
@@ -103,7 +107,6 @@ class GithubAnalyzerConfig {
     bool? enableCache,
     String? cacheDirectory,
     Duration? cacheDuration,
-    bool? verbose,
     int? maxConcurrentRequests,
     bool? enableIsolatePool,
     int? isolatePoolSize,
@@ -118,7 +121,6 @@ class GithubAnalyzerConfig {
       enableCache: enableCache ?? this.enableCache,
       cacheDirectory: cacheDirectory ?? this.cacheDirectory,
       cacheDuration: cacheDuration ?? this.cacheDuration,
-      verbose: verbose ?? this.verbose,
       maxConcurrentRequests:
           maxConcurrentRequests ?? this.maxConcurrentRequests,
       enableIsolatePool: enableIsolatePool ?? this.enableIsolatePool,

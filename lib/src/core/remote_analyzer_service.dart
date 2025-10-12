@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:archive/archive.dart';
-import 'package:archive/archive_io.dart';
 import 'package:github_analyzer/src/common/config.dart';
 import 'package:github_analyzer/src/common/logger.dart';
 import 'package:github_analyzer/src/common/utils/file_utils.dart';
@@ -8,29 +7,52 @@ import 'package:github_analyzer/src/common/utils/github_utils.dart';
 import 'package:github_analyzer/src/common/errors/analyzer_exception.dart';
 import 'package:github_analyzer/src/infrastructure/interfaces/i_github_api_provider.dart';
 import 'package:github_analyzer/src/data/providers/zip_downloader.dart';
-import 'package:github_analyzer/src/data/services/cache_service.dart';
+import 'package:github_analyzer/src/core/cache_service.dart';
 import 'package:github_analyzer/src/core/repository_analyzer.dart';
 import 'package:github_analyzer/src/models/analysis_result.dart';
 import 'package:github_analyzer/src/models/analysis_statistics.dart';
 import 'package:github_analyzer/src/models/analysis_progress.dart';
 
+/// Service responsible for analyzing remote GitHub repositories.
+///
+/// It handles fetching repository metadata, downloading the archive,
+/// analyzing the contents, and managing the cache.
 class RemoteAnalyzerService {
   final GithubAnalyzerConfig config;
-  final AnalyzerLogger logger;
   final IGithubApiProvider apiProvider;
   final ZipDownloader zipDownloader;
   final CacheService? cacheService;
   final StreamController<AnalysisProgress>? progressController;
 
+  /// Creates an instance of [RemoteAnalyzerService].
   RemoteAnalyzerService({
     required this.config,
-    required this.logger,
     required this.apiProvider,
     required this.zipDownloader,
     this.cacheService,
     this.progressController,
   });
 
+  /// Creates a copy of this service with the given fields replaced.
+  /// This is useful for modifying the service's behavior, such as providing
+  /// a progress controller for a specific analysis run.
+  RemoteAnalyzerService copyWith({
+    GithubAnalyzerConfig? config,
+    IGithubApiProvider? apiProvider,
+    ZipDownloader? zipDownloader,
+    CacheService? cacheService,
+    StreamController<AnalysisProgress>? progressController,
+  }) {
+    return RemoteAnalyzerService(
+      config: config ?? this.config,
+      apiProvider: apiProvider ?? this.apiProvider,
+      zipDownloader: zipDownloader ?? this.zipDownloader,
+      cacheService: cacheService ?? this.cacheService,
+      progressController: progressController ?? this.progressController,
+    );
+  }
+
+  /// Analyzes a remote repository.
   Future<AnalysisResult> analyze({
     required String repositoryUrl,
     String? branch,
@@ -145,7 +167,6 @@ class RemoteAnalyzerService {
 
       final repositoryAnalyzer = RepositoryAnalyzer(
         config: config,
-        logger: logger,
       );
 
       final files = await repositoryAnalyzer.analyzeArchive(archive);
@@ -200,8 +221,7 @@ class RemoteAnalyzerService {
       logger.info('Remote analysis completed: ${files.length} files analyzed');
       return result;
     } catch (e, stackTrace) {
-      logger.error('Remote analysis failed: $e');
-      logger.debug('Stack trace: $stackTrace');
+      logger.severe('Remote analysis failed.', e, stackTrace);
 
       _emitProgress(
         AnalysisProgress(
@@ -220,6 +240,7 @@ class RemoteAnalyzerService {
         'Remote analysis failed',
         code: AnalyzerErrorCode.analysisError,
         details: e.toString(),
+        originalException: e,
         stackTrace: stackTrace,
       );
     }

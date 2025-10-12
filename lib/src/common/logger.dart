@@ -1,44 +1,26 @@
-// ignore_for_file: avoid_print
+import 'package:logging/logging.dart';
 
-enum LogLevel { debug, info, warning, error }
+/// The root logger for the application.
+final logger = Logger('GithubAnalyzer');
 
-class AnalyzerLogger {
-  final bool verbose;
-  final LogLevel minLevel;
-
-  AnalyzerLogger({this.verbose = false, this.minLevel = LogLevel.info});
-
-  void debug(String message) {
-    if (verbose && _shouldLog(LogLevel.debug)) {
-      _log('DEBUG', message);
+/// Sets up the logger for the application.
+///
+/// Configures the logging level and sets up a listener to print log records
+/// to the console with a specific format.
+///
+/// If [verbose] is true, the log level is set to [Level.ALL], otherwise it
+/// defaults to [Level.INFO].
+void setupLogger({bool verbose = false}) {
+  Logger.root.level = verbose ? Level.ALL : Level.INFO;
+  Logger.root.onRecord.listen((record) {
+    print(
+      '${record.time} [${record.level.name}] ${record.loggerName}: ${record.message}',
+    );
+    if (record.error != null) {
+      print('  Error: ${record.error}');
     }
-  }
-
-  void info(String message) {
-    if (_shouldLog(LogLevel.info)) {
-      _log('INFO', message);
+    if (record.stackTrace != null) {
+      print('  Stack Trace:\n${record.stackTrace}');
     }
-  }
-
-  void warning(String message) {
-    if (_shouldLog(LogLevel.warning)) {
-      _log('WARNING', message);
-    }
-  }
-
-  void error(String message) {
-    if (_shouldLog(LogLevel.error)) {
-      _log('ERROR', message);
-    }
-  }
-
-  bool _shouldLog(LogLevel level) {
-    return level.index >= minLevel.index;
-  }
-
-  void _log(String level, String message) {
-    final timestamp = DateTime.now().toIso8601String();
-
-    print('[$timestamp] [$level] $message');
-  }
+  });
 }

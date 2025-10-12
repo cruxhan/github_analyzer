@@ -8,27 +8,35 @@ import 'package:github_analyzer/src/common/utils/file_utils.dart';
 import 'package:path/path.dart' as path;
 import 'package:github_analyzer/src/common/language_info.dart';
 
+/// Represents the changes detected between two analysis runs.
 class FileChange {
   final List<String> added;
   final List<String> modified;
   final List<String> deleted;
 
+  /// Creates an instance of [FileChange].
   FileChange({
     required this.added,
     required this.modified,
     required this.deleted,
   });
 
+  /// Returns true if no changes were detected.
   bool get isEmpty => added.isEmpty && modified.isEmpty && deleted.isEmpty;
+
+  /// The total number of changed files.
   int get length => added.length + modified.length + deleted.length;
 }
 
+/// Performs an incremental analysis by comparing the current state of a
+/// repository with a previous analysis result.
 class IncrementalAnalyzer {
   final GithubAnalyzerConfig config;
-  final AnalyzerLogger logger;
 
-  IncrementalAnalyzer({required this.config, required this.logger});
+  /// Creates an instance of [IncrementalAnalyzer].
+  IncrementalAnalyzer({required this.config});
 
+  /// Analyzes a local directory based on a previous analysis result.
   Future<AnalysisResult> analyze(
     String directoryPath, {
     required AnalysisResult previousResult,
@@ -43,7 +51,7 @@ class IncrementalAnalyzer {
     }
 
     logger.info('Changes detected: ${changes.length} files');
-    logger.debug(
+    logger.fine(
       'Added: ${changes.added.length}, Modified: ${changes.modified.length}, Deleted: ${changes.deleted.length}',
     );
 
@@ -66,8 +74,8 @@ class IncrementalAnalyzer {
         if (analyzed != null) {
           fileMap[changedPath] = analyzed;
         }
-      } catch (e) {
-        logger.warning('Failed to analyze file $changedPath: $e');
+      } catch (e, stackTrace) {
+        logger.warning('Failed to analyze file $changedPath', e, stackTrace);
       }
     }
 
@@ -81,8 +89,8 @@ class IncrementalAnalyzer {
     final primaryLanguage = statistics.languageDistribution.isEmpty
         ? null
         : statistics.languageDistribution.entries
-              .reduce((a, b) => a.value > b.value ? a : b)
-              .key;
+            .reduce((a, b) => a.value > b.value ? a : b)
+            .key;
 
     final updatedMetadata = previousResult.metadata.copyWith(
       language: primaryLanguage,
@@ -104,7 +112,7 @@ class IncrementalAnalyzer {
   Future<SourceFile?> _analyzeFile(File file, String relativePath) async {
     final stat = await file.stat();
     if (stat.size > config.maxFileSize) {
-      logger.debug('Skipping large file in incremental scan: $relativePath');
+      logger.finer('Skipping large file in incremental scan: $relativePath');
       return null;
     }
 
@@ -117,7 +125,7 @@ class IncrementalAnalyzer {
         content = await file.readAsString();
         lineCount = content.split('\n').length;
       } catch (e) {
-        logger.debug(
+        logger.finer(
           'Failed to read file as text in incremental scan: $relativePath, error: $e',
         );
         // If reading as text fails, treat it as a binary file for statistics.
@@ -189,10 +197,8 @@ class IncrementalAnalyzer {
       }
     }
 
-    final deleted = previousFilesMap.keys
-        .toSet()
-        .difference(currentFilePaths)
-        .toList();
+    final deleted =
+        previousFilesMap.keys.toSet().difference(currentFilePaths).toList();
 
     return FileChange(added: added, modified: modified, deleted: deleted);
   }

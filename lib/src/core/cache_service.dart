@@ -5,18 +5,20 @@ import 'package:github_analyzer/src/common/logger.dart';
 import 'package:github_analyzer/src/common/errors/analyzer_exception.dart';
 import 'package:github_analyzer/src/models/analysis_result.dart';
 
+/// Manages caching of analysis results to avoid redundant computations.
 class CacheService {
   final String cacheDirectory;
-  final AnalyzerLogger logger;
   final Duration? maxAge;
   bool _isInitialized = false;
 
+  /// Creates an instance of [CacheService].
   CacheService({
     required this.cacheDirectory,
-    required this.logger,
     this.maxAge,
   });
 
+  /// Initializes the cache service by creating the cache directory if it
+  /// doesn't exist.
   Future<void> initialize() async {
     if (_isInitialized) return;
     final dir = Directory(cacheDirectory);
@@ -32,6 +34,7 @@ class CacheService {
     return sha256.convert(utf8.encode(input)).toString();
   }
 
+  /// Retrieves a cached [AnalysisResult] if available and not expired.
   Future<AnalysisResult?> get(String repositoryUrl, String commitHash) async {
     if (!_isInitialized) {
       throw AnalyzerException(
@@ -44,7 +47,7 @@ class CacheService {
     final cacheFile = File('$cacheDirectory/$key.json');
 
     if (!await cacheFile.exists()) {
-      logger.debug('Cache miss for $repositoryUrl (commit: $commitHash)');
+      logger.fine('Cache miss for $repositoryUrl (commit: $commitHash)');
       return null;
     }
 
@@ -63,15 +66,18 @@ class CacheService {
       final json = jsonDecode(content) as Map<String, dynamic>;
       logger.info('Cache hit for $repositoryUrl (commit: $commitHash)');
       return AnalysisResult.fromJson(json);
-    } catch (e) {
+    } catch (e, stackTrace) {
       logger.warning(
         'Failed to read or parse cache file for $key. Deleting. Error: $e',
+        e,
+        stackTrace,
       );
       await delete(repositoryUrl, commitHash);
       return null;
     }
   }
 
+  /// Saves an [AnalysisResult] to the cache.
   Future<void> set(
     String repositoryUrl,
     String commitHash,
@@ -91,8 +97,8 @@ class CacheService {
       final json = jsonEncode(result.toJson());
       await cacheFile.writeAsString(json);
       logger.info('Saved cache for $repositoryUrl (commit: $commitHash)');
-    } catch (e) {
-      logger.error('Failed to write cache for $key: $e');
+    } catch (e, stackTrace) {
+      logger.severe('Failed to write cache for $key', e, stackTrace);
       throw AnalyzerException(
         'Failed to write to cache',
         code: AnalyzerErrorCode.cacheError,
@@ -101,6 +107,7 @@ class CacheService {
     }
   }
 
+  /// Deletes a specific entry from the cache.
   Future<void> delete(String repositoryUrl, String commitHash) async {
     final key = _generateCacheKey(repositoryUrl, commitHash);
     final cacheFile = File('$cacheDirectory/$key.json');
@@ -110,6 +117,7 @@ class CacheService {
     }
   }
 
+  /// Clears the entire cache directory.
   Future<void> clear() async {
     final dir = Directory(cacheDirectory);
     if (await dir.exists()) {
@@ -120,6 +128,7 @@ class CacheService {
     }
   }
 
+  /// Gets statistics about the cache, such as total files and size.
   Future<Map<String, dynamic>> getStatistics() async {
     final dir = Directory(cacheDirectory);
     if (!await dir.exists()) {

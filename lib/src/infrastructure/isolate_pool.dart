@@ -1,22 +1,24 @@
 import 'dart:isolate';
 import 'package:github_analyzer/src/common/logger.dart';
 
+/// Manages a pool of isolates to perform tasks in parallel.
 class IsolatePool {
   final int size;
-  final AnalyzerLogger logger;
   final List<_IsolateWorker> _workers = [];
   int _currentWorkerIndex = 0;
   bool _isInitialized = false;
 
-  IsolatePool({required this.size, required this.logger});
+  /// Creates an instance of [IsolatePool].
+  IsolatePool({required this.size});
 
+  /// Initializes the isolate pool by spawning the configured number of workers.
   Future<void> initialize() async {
     if (_isInitialized) return;
 
     logger.info('Initializing isolate pool with $size workers');
 
     for (int i = 0; i < size; i++) {
-      final worker = _IsolateWorker(id: i, logger: logger);
+      final worker = _IsolateWorker(id: i);
       await worker.spawn();
       _workers.add(worker);
     }
@@ -25,6 +27,7 @@ class IsolatePool {
     logger.info('Isolate pool initialized');
   }
 
+  /// Executes a task on the next available isolate in the pool.
   Future<R> execute<T, R>(Future<R> Function(T) task, T argument) async {
     if (!_isInitialized) {
       throw StateError('IsolatePool not initialized. Call initialize() first.');
@@ -36,6 +39,7 @@ class IsolatePool {
     return await worker.execute(task, argument);
   }
 
+  /// Executes a list of tasks distributed across the isolate pool.
   Future<List<R>> executeAll<T, R>(
     Future<R> Function(T) task,
     List<T> arguments,
@@ -54,6 +58,7 @@ class IsolatePool {
     return await Future.wait(futures);
   }
 
+  /// Disposes the isolate pool by terminating all worker isolates.
   Future<void> dispose() async {
     if (!_isInitialized) return;
 
@@ -71,20 +76,19 @@ class IsolatePool {
 
 class _IsolateWorker {
   final int id;
-  final AnalyzerLogger logger;
   Isolate? _isolate;
   SendPort? _sendPort;
   final ReceivePort _receivePort = ReceivePort();
 
-  _IsolateWorker({required this.id, required this.logger});
+  _IsolateWorker({required this.id});
 
   Future<void> spawn() async {
-    logger.debug('Spawning isolate worker $id');
+    logger.fine('Spawning isolate worker $id');
 
     _isolate = await Isolate.spawn(_isolateEntryPoint, _receivePort.sendPort);
 
     _sendPort = await _receivePort.first as SendPort;
-    logger.debug('Isolate worker $id spawned');
+    logger.fine('Isolate worker $id spawned');
   }
 
   Future<R> execute<T, R>(Future<R> Function(T) task, T argument) async {
@@ -108,7 +112,7 @@ class _IsolateWorker {
   Future<void> kill() async {
     _isolate?.kill(priority: Isolate.immediate);
     _receivePort.close();
-    logger.debug('Isolate worker $id killed');
+    logger.fine('Isolate worker $id killed');
   }
 
   static void _isolateEntryPoint(SendPort sendPort) {

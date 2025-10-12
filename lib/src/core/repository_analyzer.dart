@@ -14,13 +14,12 @@ import 'package:path/path.dart' as path;
 /// Analyzes the repository files from a local directory or a memory archive.
 class RepositoryAnalyzer {
   final GithubAnalyzerConfig config;
-  final AnalyzerLogger logger;
   final IsolatePool? isolatePool;
   final List<AnalysisError> errors = [];
 
+  /// Creates an instance of [RepositoryAnalyzer].
   RepositoryAnalyzer({
     required this.config,
-    required this.logger,
     this.isolatePool,
   });
 
@@ -43,14 +42,14 @@ class RepositoryAnalyzer {
         if (entity is File) {
           final relativePath = path.relative(entity.path, from: directoryPath);
           if (shouldExclude(relativePath, config.excludePatterns)) {
-            logger.debug('Excluded by pattern: $relativePath');
+            logger.finer('Excluded by pattern: $relativePath');
             continue;
           }
           fileEntities.add(entity);
         }
       }
-    } catch (e) {
-      logger.error('Error listing directory contents: $e');
+    } catch (e, stackTrace) {
+      logger.severe('Error listing directory contents.', e, stackTrace);
     }
 
     final files = await _processFiles(fileEntities, directoryPath);
@@ -78,12 +77,12 @@ class RepositoryAnalyzer {
     for (final file in archiveFiles) {
       final relativePath =
           (baseDir != null && file.name.startsWith('$baseDir/'))
-          ? file.name.substring(baseDir.length + 1)
-          : file.name;
+              ? file.name.substring(baseDir.length + 1)
+              : file.name;
 
       if (relativePath.isEmpty ||
           shouldExclude(relativePath, config.excludePatterns)) {
-        logger.debug('Excluded by pattern: $relativePath');
+        logger.finer('Excluded by pattern: $relativePath');
         continue;
       }
 
@@ -97,7 +96,8 @@ class RepositoryAnalyzer {
           files.add(sourceFile);
         }
       } catch (e, stackTrace) {
-        logger.warning('Failed to analyze archive file ${file.name}: $e');
+        logger.warning(
+            'Failed to analyze archive file ${file.name}', e, stackTrace);
         errors.add(
           AnalysisError(
             path: relativePath,
@@ -121,7 +121,7 @@ class RepositoryAnalyzer {
     String basePath,
   ) async {
     if (isolatePool != null && fileEntities.length > 50) {
-      // Using IsolatePool for larger number of files
+      // Using IsolatePool for a larger number of files
       logger.info(
         'Using isolate pool for parallel analysis of ${fileEntities.length} files.',
       );
@@ -178,7 +178,7 @@ class RepositoryAnalyzer {
           files.add(sourceFile);
         }
       } catch (e, stackTrace) {
-        logger.warning('Failed to analyze file ${entity.path}: $e');
+        logger.warning('Failed to analyze file ${entity.path}', e, stackTrace);
         errors.add(
           AnalysisError(
             path: relativePath,
@@ -252,7 +252,7 @@ class RepositoryAnalyzer {
     int maxFileSize,
   ) async {
     if (file.size > maxFileSize) {
-      logger.debug('Excluded large file: $relativePath');
+      logger.finer('Excluded large file: $relativePath');
       return null;
     }
 
@@ -267,7 +267,7 @@ class RepositoryAnalyzer {
         content = utf8.decode(file.content as List<int>, allowMalformed: true);
         lineCount = content.split('\n').length;
       } catch (e) {
-        logger.debug('Failed to read archive file as text $relativePath: $e');
+        logger.finer('Failed to read archive file as text $relativePath: $e');
         // Treat as binary if decoding fails
         return _createFileModel(
           relativePath,
@@ -298,7 +298,7 @@ class RepositoryAnalyzer {
   ) async {
     final stat = await file.stat();
     if (stat.size > maxFileSize) {
-      logger.debug('Excluded large file: $relativePath');
+      logger.finer('Excluded large file: $relativePath');
       return null;
     }
 
@@ -311,7 +311,7 @@ class RepositoryAnalyzer {
         content = await file.readAsString();
         lineCount = content.split('\n').length;
       } catch (e) {
-        logger.debug('Failed to read file as text $relativePath: $e');
+        logger.finer('Failed to read file as text $relativePath: $e');
         // Treat as binary if decoding fails
         return _createFileModel(
           relativePath,
@@ -381,7 +381,9 @@ class RepositoryAnalyzer {
     );
   }
 
+  /// Returns an unmodifiable list of errors encountered during analysis.
   List<AnalysisError> getErrors() => List.unmodifiable(errors);
 
+  /// Clears the list of errors.
   void clearErrors() => errors.clear();
 }
