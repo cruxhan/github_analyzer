@@ -1,3 +1,5 @@
+// lib/src/common/constants.dart
+
 const List<String> kDefaultExcludePatterns = [
   'node_modules/**',
   '.git/**',
@@ -103,63 +105,81 @@ const Set<String> kBinaryExtensions = {
   'cache',
 };
 
-const List<String> kConfigurationPatterns = [
-  '**/*.json',
-  '**/*.yaml',
-  '**/*.yml',
-  '**/*.toml',
-  '**/*.ini',
-  '**/*.cfg',
-  '**/*.conf',
-  '**/*.config',
-  '**/.env',
-  '**/.env.*',
-  '**/package.json',
-  '**/tsconfig.json',
-  '**/jsconfig.json',
-  '**/webpack.config.*',
-  '**/babel.config.*',
-  '**/rollup.config.*',
-  '**/vite.config.*',
-  '**/.eslintrc*',
-  '**/.prettierrc*',
-  '**/.editorconfig',
-  '**/pubspec.yaml',
-  '**/Cargo.toml',
-  '**/go.mod',
-  '**/pom.xml',
-  '**/build.gradle',
-  '**/settings.gradle',
-  '**/CMakeLists.txt',
-  '**/.gitignore',
-  '**/.dockerignore',
-  '**/Dockerfile',
-  '**/docker-compose.*',
-  '**/.gitattributes',
-];
+const Set<String> kDocumentationFileNames = {
+  'readme',
+  'changelog',
+  'license',
+  'contributing',
+  'authors',
+  'history',
+};
 
-const List<String> kDocumentationPatterns = [
-  '**/README*',
-  '**/CHANGELOG*',
-  '**/LICENSE*',
-  '**/CONTRIBUTING*',
-  '**/AUTHORS*',
-  '**/HISTORY*',
-  '**/*.md',
-  '**/*.markdown',
-  '**/*.rst',
-  '**/*.txt',
-  '**/docs/**',
-  '**/doc/**',
-  '**/documentation/**',
-];
+const Set<String> kDocumentationExtensions = {
+  'md',
+  'markdown',
+  'rst',
+  'txt',
+};
+
+const Set<String> kConfigurationFileNames = {
+  'pubspec.yaml',
+  'package.json',
+  'tsconfig.json',
+  'jsconfig.json',
+  'webpack.config.js',
+  'babel.config.js',
+  'rollup.config.js',
+  'vite.config.js',
+  '.eslintrc',
+  '.prettierrc',
+  '.editorconfig',
+  'cargo.toml',
+  'go.mod',
+  'pom.xml',
+  'build.gradle',
+  'settings.gradle',
+  'cmakelists.txt',
+  '.gitignore',
+  '.dockerignore',
+  'dockerfile',
+};
+
+const Set<String> kConfigurationExtensions = {
+  'json',
+  'yaml',
+  'yml',
+  'toml',
+  'ini',
+  'cfg',
+  'conf',
+  'config',
+};
+
+// ## 수정된 부분 ##
+// main 파일 목록을 상수로 추가
+const Set<String> kMainFilePatterns = {
+  'main.dart',
+  'main.py',
+  'main.js',
+  'main.ts',
+  'index.js',
+  'index.ts',
+  'app.js',
+  'app.ts',
+  'server.js',
+  'server.ts',
+  'Main.java',
+  'main.go',
+  'main.rs',
+  'main.c',
+  'main.cpp',
+  'main.swift',
+  'MainActivity.kt',
+  'AppDelegate.swift',
+};
 
 const int kDefaultMaxFileSize = 10 * 1024 * 1024; // 10 MB
-
 const Duration kDefaultCacheDuration = Duration(hours: 24);
-
 const Duration kDefaultRequestTimeout = Duration(seconds: 30);
-
 const int kDefaultMaxConcurrentRequests = 10;
-
 const int kDefaultMaxRetries = 3;

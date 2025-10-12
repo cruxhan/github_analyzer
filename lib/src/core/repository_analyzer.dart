@@ -1,5 +1,7 @@
-import 'dart:convert';
+// lib/src/core/repository_analyzer.dart
+
 import 'dart:io';
+import 'dart:convert';
 import 'package:archive/archive.dart';
 import 'package:github_analyzer/src/common/config.dart';
 import 'package:github_analyzer/src/common/language_info.dart';
@@ -70,8 +72,6 @@ class RepositoryAnalyzer {
       baseDir = archive.first.name.split('/').first;
     }
 
-    // IsolatePool can't be used here easily because ArchiveFile is not directly sendable.
-    // We'll process it sequentially for now.
     final archiveFiles = archive.where((f) => f.isFile).toList();
 
     for (final file in archiveFiles) {
@@ -115,13 +115,11 @@ class RepositoryAnalyzer {
     return files;
   }
 
-  /// Processes a list of file entities, using isolates if available.
   Future<List<SourceFile>> _processFiles(
     List<File> fileEntities,
     String basePath,
   ) async {
     if (isolatePool != null && fileEntities.length > 50) {
-      // Using IsolatePool for a larger number of files
       logger.info(
         'Using isolate pool for parallel analysis of ${fileEntities.length} files.',
       );
@@ -160,7 +158,6 @@ class RepositoryAnalyzer {
     }
   }
 
-  /// Analyzes a list of files sequentially.
   Future<List<SourceFile>> _analyzeFilesSequentially(
     List<File> fileEntities,
     String basePath,
@@ -192,7 +189,6 @@ class RepositoryAnalyzer {
     return files;
   }
 
-  /// Static entry point for isolate execution.
   static Future<dynamic> _analyzeFileInIsolate(
     Map<String, dynamic> args,
   ) async {
@@ -206,7 +202,7 @@ class RepositoryAnalyzer {
     try {
       final stat = await file.stat();
       if (stat.size > maxFileSize) {
-        return null; // Skip large files
+        return null;
       }
 
       final isBinary = isBinaryFile(relativePath);
@@ -217,7 +213,6 @@ class RepositoryAnalyzer {
           content = await file.readAsString();
           lineCount = content.split('\n').length;
         } catch (e) {
-          // Not a text file, treat as binary
           return _createFileModelFromData(
             relativePath,
             stat.size,
@@ -245,7 +240,6 @@ class RepositoryAnalyzer {
     }
   }
 
-  /// Analyzes a single `ArchiveFile`.
   Future<SourceFile?> _analyzeArchiveFile(
     ArchiveFile file,
     String relativePath,
@@ -259,8 +253,7 @@ class RepositoryAnalyzer {
     final isBinary = isBinaryFile(relativePath);
     String? content;
     int lineCount = 0;
-    final timestamp =
-        DateTime.now(); // Archive files don't have a reliable modified time
+    final timestamp = DateTime.now();
 
     if (!isBinary) {
       try {
@@ -268,7 +261,6 @@ class RepositoryAnalyzer {
         lineCount = content.split('\n').length;
       } catch (e) {
         logger.finer('Failed to read archive file as text $relativePath: $e');
-        // Treat as binary if decoding fails
         return _createFileModel(
           relativePath,
           file.size,
@@ -290,7 +282,6 @@ class RepositoryAnalyzer {
     );
   }
 
-  /// Analyzes a single `File`.
   Future<SourceFile?> _analyzeFile(
     File file,
     String relativePath,
@@ -312,7 +303,6 @@ class RepositoryAnalyzer {
         lineCount = content.split('\n').length;
       } catch (e) {
         logger.finer('Failed to read file as text $relativePath: $e');
-        // Treat as binary if decoding fails
         return _createFileModel(
           relativePath,
           stat.size,
@@ -333,7 +323,6 @@ class RepositoryAnalyzer {
     );
   }
 
-  /// Helper to create a SourceFile instance. (For instance methods)
   SourceFile _createFileModel(
     String path,
     int size,
@@ -343,6 +332,10 @@ class RepositoryAnalyzer {
     DateTime timestamp,
   ) {
     final language = detectLanguage(path);
+    final isDoc = isDocumentationFile(path);
+    final isConfig = isConfigurationFile(path);
+    final isSrc = language != null && !isBinary && !isDoc && !isConfig;
+
     return SourceFile(
       path: path,
       content: content,
@@ -350,14 +343,13 @@ class RepositoryAnalyzer {
       language: language,
       isBinary: isBinary,
       lineCount: lineCount,
-      isSourceCode: language != null && !isBinary,
-      isConfiguration: isConfigurationFile(path),
-      isDocumentation: isDocumentationFile(path),
+      isSourceCode: isSrc,
+      isConfiguration: isConfig,
+      isDocumentation: isDoc,
       timestamp: timestamp,
     );
   }
 
-  /// Helper to create a SourceFile instance. (For static/isolate methods)
   static SourceFile _createFileModelFromData(
     String path,
     int size,
@@ -367,6 +359,10 @@ class RepositoryAnalyzer {
     DateTime timestamp,
   ) {
     final language = detectLanguage(path);
+    final isDoc = isDocumentationFile(path);
+    final isConfig = isConfigurationFile(path);
+    final isSrc = language != null && !isBinary && !isDoc && !isConfig;
+
     return SourceFile(
       path: path,
       content: content,
@@ -374,16 +370,14 @@ class RepositoryAnalyzer {
       language: language,
       isBinary: isBinary,
       lineCount: lineCount,
-      isSourceCode: language != null && !isBinary,
-      isConfiguration: isConfigurationFile(path),
-      isDocumentation: isDocumentationFile(path),
+      isSourceCode: isSrc,
+      isConfiguration: isConfig,
+      isDocumentation: isDoc,
       timestamp: timestamp,
     );
   }
 
-  /// Returns an unmodifiable list of errors encountered during analysis.
   List<AnalysisError> getErrors() => List.unmodifiable(errors);
 
-  /// Clears the list of errors.
   void clearErrors() => errors.clear();
 }

@@ -1,3 +1,5 @@
+// lib/src/common/utils/file_utils.dart
+
 import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:github_analyzer/src/common/constants.dart';
@@ -13,7 +15,6 @@ String formatFileSize(int bytes) {
   return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
 }
 
-/// Matches a file path against a list of glob patterns using the `glob` package.
 bool _matchesAnyPattern(String filePath, List<String> patterns) {
   final normalizedPath = path.normalize(filePath).replaceAll('\\', '/');
   for (final pattern in patterns) {
@@ -35,40 +36,34 @@ bool isBinaryFile(String filePath) {
 }
 
 bool isConfigurationFile(String filePath) {
-  return _matchesAnyPattern(filePath, kConfigurationPatterns);
+  final fileName = path.basename(filePath).toLowerCase();
+  final extension = path.extension(fileName).replaceAll('.', '');
+
+  if (kConfigurationFileNames.contains(fileName)) {
+    return true;
+  }
+  return kConfigurationExtensions.contains(extension);
 }
 
 bool isDocumentationFile(String filePath) {
-  return _matchesAnyPattern(filePath, kDocumentationPatterns);
+  final fileNameWithExt = path.basename(filePath).toLowerCase();
+  final extension = path.extension(fileNameWithExt).replaceAll('.', '');
+  final fileNameWithoutExt = path.basenameWithoutExtension(fileNameWithExt);
+
+  if (kDocumentationFileNames.contains(fileNameWithoutExt) ||
+      kDocumentationFileNames.contains(fileNameWithExt)) {
+    return true;
+  }
+  return kDocumentationExtensions.contains(extension);
 }
 
+// ## 수정된 부분 ##
+// kMainFilePatterns 상수를 사용하도록 변경
 List<String> identifyMainFiles(List<SourceFile> files) {
   final mainFiles = <String>[];
-  // ... (이하 동일)
-  final mainPatterns = [
-    'main.dart',
-    'main.py',
-    'main.js',
-    'main.ts',
-    'index.js',
-    'index.ts',
-    'app.js',
-    'app.ts',
-    'server.js',
-    'server.ts',
-    'Main.java',
-    'main.go',
-    'main.rs',
-    'main.c',
-    'main.cpp',
-    'main.swift',
-    'MainActivity.kt',
-    'AppDelegate.swift',
-  ];
-
   for (final file in files) {
     final fileName = path.basename(file.path);
-    if (mainPatterns.contains(fileName)) {
+    if (kMainFilePatterns.contains(fileName)) {
       mainFiles.add(file.path);
     }
   }
@@ -77,31 +72,41 @@ List<String> identifyMainFiles(List<SourceFile> files) {
 
 Map<String, List<String>> extractDependencies(List<SourceFile> files) {
   final dependencies = <String, List<String>>{};
-  // ... (이하 동일)
   for (final file in files) {
     if (file.content == null) continue;
     final fileName = path.basename(file.path);
-    final deps = <String>[];
+    List<String>? deps;
 
-    if (fileName == 'package.json') {
-      deps.add('Node.js/npm');
-    } else if (fileName == 'pubspec.yaml') {
-      deps.add('Dart/pub');
-    } else if (fileName == 'requirements.txt' || fileName == 'setup.py') {
-      deps.add('Python/pip');
-    } else if (fileName == 'Cargo.toml') {
-      deps.add('Rust/cargo');
-    } else if (fileName == 'go.mod') {
-      deps.add('Go modules');
-    } else if (fileName == 'pom.xml' || fileName == 'build.gradle') {
-      deps.add('Java/Maven or Gradle');
-    } else if (fileName == 'Gemfile') {
-      deps.add('Ruby/bundler');
-    } else if (fileName == 'composer.json') {
-      deps.add('PHP/composer');
+    switch (fileName) {
+      case 'package.json':
+        deps = ['Node.js/npm'];
+        break;
+      case 'pubspec.yaml':
+        deps = ['Dart/pub'];
+        break;
+      case 'requirements.txt':
+      case 'setup.py':
+        deps = ['Python/pip'];
+        break;
+      case 'Cargo.toml':
+        deps = ['Rust/cargo'];
+        break;
+      case 'go.mod':
+        deps = ['Go modules'];
+        break;
+      case 'pom.xml':
+      case 'build.gradle':
+        deps = ['Java/Maven or Gradle'];
+        break;
+      case 'Gemfile':
+        deps = ['Ruby/bundler'];
+        break;
+      case 'composer.json':
+        deps = ['PHP/composer'];
+        break;
     }
 
-    if (deps.isNotEmpty) {
+    if (deps != null) {
       dependencies[file.path] = deps;
     }
   }
@@ -109,7 +114,6 @@ Map<String, List<String>> extractDependencies(List<SourceFile> files) {
 }
 
 Future<String?> readFileContent(File file, int maxFileSize) async {
-  // ... (이하 동일)
   final stat = await file.stat();
   if (stat.size > maxFileSize) {
     return null;
