@@ -1,163 +1,73 @@
-import 'dart:io';
+import 'package:path/path.dart' as path;
 import 'package:github_analyzer/src/models/analysis_result.dart';
+import 'package:github_analyzer/src/common/utils/markdown_generator.dart';
+import 'package:github_analyzer/src/infrastructure/file_system/file_system.dart';
 
+/// Generates context output files from analysis results using platform-independent file system
 class ContextGenerator {
-  static Future<void> generate(AnalysisResult result, String outputPath) async {
-    final buffer = StringBuffer();
+  static final IFileSystem _fs = getFileSystem();
 
-    buffer.writeln('# Repository Context: ${result.metadata.name}');
-    buffer.writeln();
-    buffer.writeln('## Overview');
-    buffer.writeln(
-      'Description: ${result.metadata.description ?? 'No description'}',
-    );
-    buffer.writeln(
-      'Primary Language: ${result.metadata.language ?? 'Unknown'}',
-    );
-    buffer.writeln('Stars: ${result.metadata.stars}');
-    buffer.writeln('Forks: ${result.metadata.forks}');
-    buffer.writeln();
+  /// Generates a markdown file from the analysis result with automatic naming
+  static Future<String> generate(
+    AnalysisResult result, {
+    String? outputPath,
+    String? outputDir,
+    MarkdownConfig config = MarkdownConfig.standard,
+  }) async {
+    final filePath = _resolveOutputPath(result, outputPath, outputDir);
 
-    buffer.writeln('## Statistics');
-    buffer.writeln('- Total Files: ${result.statistics.totalFiles}');
-    buffer.writeln('- Total Lines: ${result.statistics.totalLines}');
-    buffer.writeln('- Source Files: ${result.statistics.sourceFiles}');
-    buffer.writeln('- Configuration Files: ${result.statistics.configFiles}');
-    buffer.writeln(
-      '- Documentation Files: ${result.statistics.documentationFiles}',
-    );
-    buffer.writeln();
-
-    buffer.writeln('## Language Distribution');
-    final sorted = result.statistics.languageDistribution.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    for (final entry in sorted) {
-      final percentage = (entry.value / result.statistics.totalFiles * 100)
-          .toStringAsFixed(1);
-      buffer.writeln('- ${entry.key}: ${entry.value} files ($percentage%)');
-    }
-    buffer.writeln();
-
-    if (result.mainFiles.isNotEmpty) {
-      buffer.writeln('## Main Entry Points');
-      for (final file in result.mainFiles) {
-        buffer.writeln('- $file');
-      }
-      buffer.writeln();
+    // Ensure output directory exists
+    final dirPath = path.dirname(filePath);
+    final dirExists = await _fs.directoryExists(dirPath);
+    if (!dirExists) {
+      await _fs.createDirectory(dirPath);
     }
 
-    if (result.dependencies.isNotEmpty) {
-      buffer.writeln('## Dependencies');
-      for (final entry in result.dependencies.entries) {
-        buffer.writeln('- ${entry.key}: ${entry.value.join(', ')}');
-      }
-      buffer.writeln();
-    }
+    await MarkdownGenerator.generateToFile(result, filePath, config: config);
 
-    if (result.errors.isNotEmpty) {
-      buffer.writeln('## Analysis Errors (${result.errors.length})');
-      for (final error in result.errors) {
-        buffer.writeln('- ${error.path}: ${error.message}');
-      }
-      buffer.writeln();
-    }
-
-    buffer.writeln('## Source Code');
-    buffer.writeln();
-
-    final sourceFiles = result.files
-        .where((f) => f.isSourceCode && f.content != null)
-        .toList();
-
-    for (final file in sourceFiles) {
-      buffer.writeln('### ${file.path}');
-      buffer.writeln();
-      buffer.writeln('```');
-      buffer.writeln(file.content);
-      buffer.writeln('```');
-      buffer.writeln();
-    }
-
-    final outputFile = File(outputPath);
-    await outputFile.writeAsString(buffer.toString());
+    return filePath;
   }
 
-  static String generateString(AnalysisResult result) {
-    final buffer = StringBuffer();
+  /// Generates a markdown string from the analysis result
+  static String generateString(
+    AnalysisResult result, {
+    MarkdownConfig config = MarkdownConfig.standard,
+  }) {
+    return MarkdownGenerator.generate(result, config: config);
+  }
 
-    buffer.writeln('# Repository Context: ${result.metadata.name}');
-    buffer.writeln();
-    buffer.writeln('## Overview');
-    buffer.writeln(
-      'Description: ${result.metadata.description ?? 'No description'}',
-    );
-    buffer.writeln(
-      'Primary Language: ${result.metadata.language ?? 'Unknown'}',
-    );
-    buffer.writeln('Stars: ${result.metadata.stars}');
-    buffer.writeln('Forks: ${result.metadata.forks}');
-    buffer.writeln();
-
-    buffer.writeln('## Statistics');
-    buffer.writeln('- Total Files: ${result.statistics.totalFiles}');
-    buffer.writeln('- Total Lines: ${result.statistics.totalLines}');
-    buffer.writeln('- Source Files: ${result.statistics.sourceFiles}');
-    buffer.writeln('- Configuration Files: ${result.statistics.configFiles}');
-    buffer.writeln(
-      '- Documentation Files: ${result.statistics.documentationFiles}',
-    );
-    buffer.writeln();
-
-    buffer.writeln('## Language Distribution');
-    final sorted = result.statistics.languageDistribution.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    for (final entry in sorted) {
-      final percentage = (entry.value / result.statistics.totalFiles * 100)
-          .toStringAsFixed(1);
-      buffer.writeln('- ${entry.key}: ${entry.value} files ($percentage%)');
-    }
-    buffer.writeln();
-
-    if (result.mainFiles.isNotEmpty) {
-      buffer.writeln('## Main Entry Points');
-      for (final file in result.mainFiles) {
-        buffer.writeln('- $file');
-      }
-      buffer.writeln();
+  /// Resolves the output path with smart defaults
+  static String _resolveOutputPath(
+    AnalysisResult result,
+    String? outputPath,
+    String? outputDir,
+  ) {
+    if (outputPath != null) {
+      return _ensureMarkdownExtension(outputPath);
     }
 
-    if (result.dependencies.isNotEmpty) {
-      buffer.writeln('## Dependencies');
-      for (final entry in result.dependencies.entries) {
-        buffer.writeln('- ${entry.key}: ${entry.value.join(', ')}');
-      }
-      buffer.writeln();
+    final dir = outputDir ?? '.';
+    final fileName = _generateFileName(result);
+
+    return path.join(dir, fileName);
+  }
+
+  /// Generates a clean file name from repository metadata
+  static String _generateFileName(AnalysisResult result) {
+    var name = result.metadata.name;
+
+    // Clean the name for file system
+    name = name.replaceAll(RegExp(r'[^\w\-\.]'), '_');
+    name = name.replaceAll(RegExp(r'_+'), '_');
+
+    return '${name}_analysis.md';
+  }
+
+  /// Ensures the file has .md extension
+  static String _ensureMarkdownExtension(String filePath) {
+    if (!filePath.endsWith('.md')) {
+      return '$filePath.md';
     }
-
-    if (result.errors.isNotEmpty) {
-      buffer.writeln('## Analysis Errors (${result.errors.length})');
-      for (final error in result.errors) {
-        buffer.writeln('- ${error.path}: ${error.message}');
-      }
-      buffer.writeln();
-    }
-
-    buffer.writeln('## Source Code');
-    buffer.writeln();
-
-    final sourceFiles = result.files
-        .where((f) => f.isSourceCode && f.content != null)
-        .toList();
-
-    for (final file in sourceFiles) {
-      buffer.writeln('### ${file.path}');
-      buffer.writeln();
-      buffer.writeln('```');
-      buffer.writeln(file.content);
-      buffer.writeln('```');
-      buffer.writeln();
-    }
-
-    return buffer.toString();
+    return filePath;
   }
 }

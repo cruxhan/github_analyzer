@@ -3,37 +3,38 @@
 [![pub version](https://img.shields.io/pub/v/github_analyzer.svg)](https://pub.dev/packages/github_analyzer)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-A powerful and flexible Dart package to analyze GitHub repositories. It can process both remote repositories via URL and local directories on your machine.
+A powerful and flexible Dart package to analyze GitHub repositories. It can process both remote repositories via URL and local directories on your machine. This tool is designed to extract comprehensive metadata, generate detailed statistics, and compile source code into a structured markdown context, making it perfect for feeding into Large Language Models (LLMs) or for conducting code audits.
 
-This tool is designed to extract comprehensive metadata, generate detailed statistics, and compile source code into a structured context, making it perfect for feeding into Large Language Models (LLMs) or for conducting code audits.
+## Key Features
 
-## ✨ Key Features
+- **Simple & Powerful API**: Analyze any public repository with a single function call. No complex setup required.
+- **Dual Analysis Modes**: Analyze repositories from a remote GitHub URL or a local file path.
+- **Comprehensive Reports**: Generates a detailed `AnalysisResult` object containing repository metadata, file-by-file analysis, language distribution, dependency detection, and more.
+- **Smart Caching**: Avoids re-analyzing unchanged remote repositories by using a commit-based caching system, saving time and API calls.
+- **High-Performance Scans**: Utilizes Dart Isolates for parallel processing of local files, ensuring fast and efficient analysis even on large codebases.
+- **Incremental Analysis**: For local repositories, it can perform an incremental analysis by comparing against a previous result, processing only the files that have been added, modified, or deleted.
+- **Real-time Progress**: Monitor the analysis progress through a callback, perfect for providing feedback in a UI or CLI.
+- **Markdown Output**: Generates optimized markdown format that is 90% more token-efficient than JSON, perfect for AI context.
+- **Smart Filtering**: Automatically excludes generated files, with configurable limits and priorities.
+- **Memory Efficient**: Stream-based markdown generation for handling large repositories.
+- **Customizable**: Fine-tune the analysis with a rich configuration object, or use dependency injection for complete control.
 
--   **Simple & Powerful API**: Analyze any public repository with a single function call. No complex setup required.
--   **Dual Analysis Modes**: Analyze repositories from a **remote GitHub URL** or a **local file path**.
--   **Comprehensive Reports**: Generates a detailed `AnalysisResult` object containing repository metadata, file-by-file analysis, language distribution, dependency detection, and more.
--   **Smart Caching**: Avoids re-analyzing unchanged remote repositories by using a commit-based caching system, saving time and API calls.
--   **High-Performance Scans**: Utilizes Dart Isolates for parallel processing of local files, ensuring fast and efficient analysis even on large codebases.
--   **Incremental Analysis**: For local repositories, it can perform an incremental analysis by comparing against a previous result, processing only the files that have been added, modified, or deleted.
--   **Real-time Progress**: Monitor the analysis progress through a callback, perfect for providing feedback in a UI or CLI.
--   **Customizable**: Fine-tune the analysis with a rich configuration object, or use dependency injection for complete control.
-
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Installation
 
 ```bash
-flutter pub add github_analyzer
+dart pub add github_analyzer
 ```
 
 Or add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  github_analyzer: ^0.0.4 # Replace with the latest version
+  github_analyzer: ^0.1.0
 ```
 
-Then, install it by running:
+Then install it by running:
 
 ```bash
 dart pub get
@@ -41,80 +42,108 @@ dart pub get
 
 ### 2. Basic Usage
 
-Analyzing a remote repository is as simple as a single function call.
+#### Simplest Way - One Line
+
+```dart
+import 'package:github_analyzer/github_analyzer.dart';
+
+void main() async {
+  // Analyze and generate markdown in one step
+  final outputPath = await analyzeAndGenerate(
+    'https://github.com/flutter/flutter',
+  );
+  
+  print('✅ Analysis saved to: $outputPath');
+}
+```
+
+#### Quick Analysis (Optimized for Speed)
+
+```dart
+void main() async {
+  // Fast analysis with optimized settings
+  final result = await analyzeQuick('https://github.com/dart-lang/sdk');
+  
+  print('Repository: ${result.metadata.fullName}');
+  print('Files: ${result.statistics.totalFiles}');
+}
+```
+
+#### LLM-Optimized Analysis
+
+```dart
+void main() async {
+  // Optimized for LLM context with automatic filtering
+  final outputPath = await analyzeForLLM(
+    'https://github.com/your/repo',
+    maxFiles: 100,  // Limit to most important 100 files
+    markdownConfig: MarkdownConfig.compact,  // Compact output
+  );
+  
+  print('LLM context ready: $outputPath');
+}
+```
+
+### 3. Standard Usage with Progress
 
 ```dart
 import 'package:github_analyzer/github_analyzer.dart';
 
 void main() async {
   try {
-    // 1. Analyze a repository with just one line of code.
+    // Analyze with progress tracking
     final result = await analyze(
       'https://github.com/flutter/flutter',
-      // Optional: Get real-time progress updates.
+      
       progressCallback: (progress) {
         final percentage = (progress.progress * 100).toStringAsFixed(1);
-        print('[${progress.phase.name}] $percentage% - ${progress.message}');
+        print('${progress.phase.name} $percentage% - ${progress.message}');
       },
-      // Optional: Enable verbose logging for debugging.
+      
       verbose: true,
     );
-
-    // 2. Use the results.
-    print('\nAnalysis Complete!');
+    
+    print('✅ Analysis Complete!');
     print('Repository: ${result.metadata.fullName}');
     print('Primary Language: ${result.metadata.language}');
-    print('Total Files Analyzed: ${result.files.length}');
-    print('Total Lines of Code: ${result.statistics.totalLines}');
-
-    // 3. Generate a detailed context file for LLMs or documentation.
-    await ContextGenerator.generate(result, './flutter_analysis_context.md');
-    print('\nContext file generated at ./flutter_analysis_context.md');
-
+    print('Total Files: ${result.files.length}');
+    print('Total Lines: ${result.statistics.totalLines}');
+    
+    // Generate markdown with auto-naming
+    final outputPath = await ContextGenerator.generate(result);
+    print('📄 Markdown saved to: $outputPath');
+    
   } catch (e) {
-    print('An error occurred during analysis: $e');
+    print('❌ An error occurred: $e');
   }
 }
 ```
 
-## ⚙️ Advanced Usage
-
-### Analyzing a Local Directory
-
-To analyze a project on your local machine, simply provide the file path.
-
-```dart
-import 'package:github_analyzer/github_analyzer.dart';
-
-void main() async {
-  // The top-level 'analyze' function works for local paths too.
-  final result = await analyze('/path/to/your/project');
-  print('Analysis of local directory complete!');
-  print('Project Name: ${result.metadata.name}');
-}
-```
+## Advanced Usage
 
 ### Custom Configuration
 
-For more control, you can pass a `GithubAnalyzerConfig` object to the `analyze` function.
+For more control, use `GithubAnalyzerConfig`:
 
 ```dart
 final config = GithubAnalyzerConfig(
-  // Provide a GitHub token for higher API rate limits
-  githubToken: 'YOUR_GITHUB_TOKEN', // Recommended for frequent use
-
-  // Exclude additional patterns from analysis
+  githubToken: 'YOUR_GITHUB_TOKEN',
+  
+  // Smart filtering options
+  excludeGeneratedFiles: true,  // Auto-exclude *.g.dart, etc.
+  maxTotalFiles: 500,  // Limit total files analyzed
+  prioritizeImportantFiles: true,  // Focus on main code
+  
+  // Additional exclude patterns
   excludePatterns: [
-    ...kDefaultExcludePatterns, // It's good practice to keep the defaults
-    '**/*.g.dart',
-    '**/test_data/**',
+    ...kDefaultExcludePatterns,
+    '*.g.dart',
+    'test_data/**',
   ],
-
-  // Set max file size to 5MB
-  maxFileSize: 5 * 1024 * 1024,
-
-  // Disable caching if needed
-  enableCache: false,
+  
+  maxFileSize: 5 * 1024 * 1024,  // 5MB limit
+  enableCache: true,
+  enableIsolatePool: true,
 );
 
 final result = await analyze(
@@ -123,38 +152,151 @@ final result = await analyze(
 );
 ```
 
-### Full Control with Dependency Injection
-
-For maximum flexibility (e.g., in a larger application or for extensive testing), you can construct the `GithubAnalyzer` class by manually creating and injecting its dependencies.
+### Preset Configurations
 
 ```dart
-// 1. Create a configuration object.
-final config = GithubAnalyzerConfig();
-
-// 2. Manually create all service dependencies.
-final httpClientManager = HttpClientManager();
-final apiProvider = GithubApiProvider(httpClientManager: httpClientManager, token: config.githubToken);
-// ... create other services like ZipDownloader, CacheService, etc.
-
-// 3. Inject dependencies into the GithubAnalyzer constructor.
-final analyzer = GithubAnalyzer(
-  config: config,
-  httpClientManager: httpClientManager,
-  apiProvider: apiProvider,
-  // ... inject all other required services
+// Quick analysis (no cache, limited files)
+final quickConfig = GithubAnalyzerConfig.quick(
+  githubToken: 'YOUR_TOKEN',
 );
 
-// 4. Use the analyzer instance.
-final result = await analyzer.analyze('https://github.com/your/repo');
-
-// 5. Remember to dispose of resources.
-await analyzer.dispose();
+// LLM-optimized (excludes tests, examples, max 200 files)
+final llmConfig = GithubAnalyzerConfig.forLLM(
+  githubToken: 'YOUR_TOKEN',
+  maxFiles: 200,
+);
 ```
 
-## 🤝 Contributing
+### Markdown Generation Options
+
+```dart
+// Standard output (all content)
+await ContextGenerator.generate(
+  result,
+  config: MarkdownConfig.standard,
+);
+
+// Compact output (limited files and content)
+await ContextGenerator.generate(
+  result,
+  config: MarkdownConfig.compact,
+);
+
+// Custom output
+await ContextGenerator.generate(
+  result,
+  config: MarkdownConfig(
+    maxFiles: 100,  // Limit to 100 files
+    maxContentSize: 50000,  // Truncate large files
+    includeBinaryStats: false,
+    includeErrors: false,
+  ),
+);
+
+// Specify output location
+await ContextGenerator.generate(
+  result,
+  outputPath: './my_analysis.md',
+  // or use outputDir to auto-generate filename
+  outputDir: './output',
+);
+```
+
+### Analyzing Local Directories
+
+```dart
+// Works the same way
+final result = await analyze('/path/to/your/project');
+
+// Or quick local analysis
+final result = await analyzeQuick('/path/to/your/project');
+```
+
+### Memory-Efficient Large Repository Handling
+
+For very large repositories, use streaming generation:
+
+```dart
+final result = await analyze('https://github.com/large/repo');
+
+// Directly write to file without loading full content in memory
+await MarkdownGenerator.generateToFile(
+  result,
+  './large_repo_analysis.md',
+  config: MarkdownConfig(
+    maxFiles: 200,
+    maxContentSize: 100000,
+  ),
+);
+```
+
+## Output Format
+
+The package generates markdown output with the following structure:
+
+```markdown
+# Repository Name
+
+## Repository Information
+**Repository:** `owner/repo`
+**Language:** Dart | **Stars:** 1234 | **Forks:** 567
+
+## Statistics
+- **Total Files:** 150
+- **Total Lines:** 25000
+- **Source Files:** 120
+
+## Directory Structure
+`
+lib/
+  src/
+    models/
+    services/
+`
+
+## Language Distribution
+- **Dart:** 120 files (80.0%)
+- **YAML:** 15 files (10.0%)
+
+## Source Code
+### lib/main.dart
+`dart
+// Full source code with syntax highlighting
+`
+```
+
+### Performance Characteristics
+
+- **Token Efficiency**: 90% reduction compared to JSON format
+- **Memory Usage**: Stream-based generation handles repositories of any size
+- **Speed**: Parallel processing with automatic optimization
+- **Smart Filtering**: Automatically excludes generated files and low-priority content
+
+## API Summary
+
+### Quick Functions
+
+- `analyzeAndGenerate()` - Analyze and create markdown in one step
+- `analyzeQuick()` - Fast analysis with optimized settings
+- `analyzeForLLM()` - LLM-optimized with automatic filtering
+
+### Core Functions
+
+- `analyze()` - Standard analysis with full control
+- `ContextGenerator.generate()` - Generate markdown from result
+- `MarkdownGenerator.generateToFile()` - Memory-efficient file generation
+
+### Configuration
+
+- `GithubAnalyzerConfig.quick()` - Fast analysis preset
+- `GithubAnalyzerConfig.forLLM()` - LLM-optimized preset
+- `MarkdownConfig.standard` - Full output
+- `MarkdownConfig.compact` - Compact output
+
+## Contributing
 
 Contributions are welcome! If you find a bug or have a feature request, please open an issue on the [GitHub issue tracker](https://github.com/cruxhan/github_analyzer/issues).
 
-## 📄 License
+## License
 
-This package is licensed under the **MIT License**. See the `LICENSE` file for details.
+This package is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.

@@ -14,37 +14,23 @@ import 'package:github_analyzer/src/infrastructure/http_client_manager.dart';
 import 'package:github_analyzer/src/infrastructure/isolate_pool.dart';
 import 'package:github_analyzer/src/models/analysis_progress.dart';
 import 'package:github_analyzer/src/models/analysis_result.dart';
+import 'package:github_analyzer/src/common/utils/context_generator.dart';
+import 'package:github_analyzer/src/common/utils/markdown_generator.dart';
 
 export 'src/common/config.dart';
 export 'src/common/errors/analyzer_exception.dart';
 export 'src/common/logger.dart';
-// Public API Exports
 export 'src/github_analyzer.dart' show GithubAnalyzer;
-// Domain Models
 export 'src/models/analysis_error.dart';
 export 'src/models/analysis_progress.dart';
 export 'src/models/analysis_result.dart';
 export 'src/models/analysis_statistics.dart';
 export 'src/models/repository_metadata.dart';
 export 'src/models/source_file.dart';
-// Utilities
-export 'src/common/utils/cfs_writer.dart';
 export 'src/common/utils/context_generator.dart';
-export 'src/common/utils/metadata_generator.dart';
+export 'src/common/utils/markdown_generator.dart';
 
-/// Analyzes a GitHub repository from a URL with a single function call.
-///
-/// This is the simplest way to use the package. It automatically handles all
-/// setup and teardown, including dependency injection and resource disposal.
-///
-/// A [config] can be optionally provided for advanced customization.
-/// A [progressCallback] can be provided to listen for [AnalysisProgress] updates.
-///
-/// Example:
-/// ```dart
-/// final result = await analyze('[https://github.com/user/repo](https://github.com/user/repo)');
-/// print('Analyzed ${result.files.length} files.');
-/// ```
+/// Analyzes a repository and returns the analysis result
 Future<AnalysisResult> analyze(
   String repositoryUrl, {
   GithubAnalyzerConfig? config,
@@ -53,10 +39,8 @@ Future<AnalysisResult> analyze(
 }) async {
   setupLogger(verbose: verbose);
 
-  // Use the provided config or create a default one.
   final effectiveConfig = config ?? GithubAnalyzerConfig();
 
-  // Create all necessary services.
   final httpClientManager = HttpClientManager();
   final apiProvider = GithubApiProvider(
     httpClientManager: httpClientManager,
@@ -102,4 +86,71 @@ Future<AnalysisResult> analyze(
     await progressSubscription?.cancel();
     await analyzer.dispose();
   }
+}
+
+/// Analyzes a repository and generates markdown output in one step
+Future<String> analyzeAndGenerate(
+  String repositoryUrl, {
+  String? outputPath,
+  String? outputDir,
+  GithubAnalyzerConfig? analyzerConfig,
+  MarkdownConfig markdownConfig = MarkdownConfig.standard,
+  void Function(AnalysisProgress)? progressCallback,
+  bool verbose = false,
+}) async {
+  final result = await analyze(
+    repositoryUrl,
+    config: analyzerConfig,
+    progressCallback: progressCallback,
+    verbose: verbose,
+  );
+
+  return await ContextGenerator.generate(
+    result,
+    outputPath: outputPath,
+    outputDir: outputDir,
+    config: markdownConfig,
+  );
+}
+
+/// Quick analysis with optimized settings for fast results
+Future<AnalysisResult> analyzeQuick(
+  String repositoryUrl, {
+  String? githubToken,
+  void Function(AnalysisProgress)? progressCallback,
+}) async {
+  return await analyze(
+    repositoryUrl,
+    config: GithubAnalyzerConfig.quick(githubToken: githubToken),
+    progressCallback: progressCallback,
+  );
+}
+
+/// Analysis optimized for LLM context generation
+Future<String> analyzeForLLM(
+  String repositoryUrl, {
+  String? outputPath,
+  String? outputDir,
+  String? githubToken,
+  int maxFiles = 200,
+  MarkdownConfig markdownConfig = MarkdownConfig.standard,
+  void Function(AnalysisProgress)? progressCallback,
+  bool verbose = false,
+}) async {
+  final result = await analyze(
+    repositoryUrl,
+    config: GithubAnalyzerConfig.forLLM(
+      githubToken: githubToken,
+      maxFiles: maxFiles,
+    ),
+    progressCallback: progressCallback,
+    verbose: verbose,
+  );
+
+  return await ContextGenerator.generate(
+    result,
+    outputPath: outputPath,
+    outputDir: outputDir,
+    config: markdownConfig,
+  );
 }

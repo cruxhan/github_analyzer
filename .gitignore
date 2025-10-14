@@ -49,6 +49,7 @@ pubspec.lock
 
 # 추가
 *.env
+*.cfs
 output/
 example/
 demo.dart

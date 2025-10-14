@@ -1,12 +1,7 @@
 import 'dart:io';
-import 'dart:convert';
 import 'package:github_analyzer/src/common/constants.dart';
 
-/// Configuration class for the GithubAnalyzer.
-///
-/// This class holds all the settings that control the behavior of the analysis,
-/// such as API tokens, file exclusion patterns, cache settings, and concurrency
-/// limits.
+/// Configuration class for the GithubAnalyzer
 class GithubAnalyzerConfig {
   final String? githubToken;
   final List<String> excludePatterns;
@@ -21,112 +16,118 @@ class GithubAnalyzerConfig {
   final int maxRetries;
   final Duration retryDelay;
 
-  /// Creates an instance of [GithubAnalyzerConfig].
-  GithubAnalyzerConfig({
+  final bool excludeGeneratedFiles;
+  final int maxTotalFiles;
+  final bool prioritizeImportantFiles;
+
+  const GithubAnalyzerConfig._private({
     this.githubToken,
-    List<String>? excludePatterns,
+    required this.excludePatterns,
     this.includePatterns = const [],
     this.maxFileSize = kDefaultMaxFileSize,
     this.enableCache = true,
-    String? cacheDirectory,
+    required this.cacheDirectory,
     this.cacheDuration = kDefaultCacheDuration,
     this.maxConcurrentRequests = kDefaultMaxConcurrentRequests,
     this.enableIsolatePool = true,
-    int? isolatePoolSize,
+    this.isolatePoolSize = 4,
     this.maxRetries = kDefaultMaxRetries,
     this.retryDelay = const Duration(seconds: 2),
-  })  : excludePatterns = excludePatterns ?? kDefaultExcludePatterns,
-        cacheDirectory = cacheDirectory ?? '.github_analyzer_cache',
-        isolatePoolSize = isolatePoolSize ?? (Platform.numberOfProcessors);
+    this.excludeGeneratedFiles = true,
+    this.maxTotalFiles = 0,
+    this.prioritizeImportantFiles = true,
+  });
 
-  /// Creates a [GithubAnalyzerConfig] from a JSON file.
-  factory GithubAnalyzerConfig.fromFile(String path) {
-    final file = File(path);
-    if (!file.existsSync()) {
-      throw Exception('Config file not found: $path');
-    }
-    final content = file.readAsStringSync();
-    final json = jsonDecode(content) as Map<String, dynamic>;
-    return GithubAnalyzerConfig.fromJson(json);
-  }
-
-  /// Creates a [GithubAnalyzerConfig] from a JSON map.
-  factory GithubAnalyzerConfig.fromJson(Map<String, dynamic> json) {
-    return GithubAnalyzerConfig(
-      githubToken: json['githubToken'] as String?,
-      excludePatterns: (json['excludePatterns'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList(),
-      includePatterns: (json['includePatterns'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          const [],
-      maxFileSize: json['maxFileSize'] as int? ?? kDefaultMaxFileSize,
-      enableCache: json['enableCache'] as bool? ?? true,
-      cacheDirectory:
-          json['cacheDirectory'] as String? ?? '.github_analyzer_cache',
-      cacheDuration: json['cacheDuration'] != null
-          ? Duration(seconds: json['cacheDuration'] as int)
-          : kDefaultCacheDuration,
-      maxConcurrentRequests: json['maxConcurrentRequests'] as int? ??
-          kDefaultMaxConcurrentRequests,
-      enableIsolatePool: json['enableIsolatePool'] as bool? ?? true,
-      isolatePoolSize:
-          json['isolatePoolSize'] as int? ?? Platform.numberOfProcessors,
-      maxRetries: json['max_retries'] as int? ?? kDefaultMaxRetries,
-      retryDelay: json['retry_delay_seconds'] != null
-          ? Duration(seconds: json['retry_delay_seconds'] as int)
-          : const Duration(seconds: 2),
-    );
-  }
-
-  /// Converts this config object into a JSON-compatible map.
-  Map<String, dynamic> toJson() {
-    return {
-      'githubToken': githubToken,
-      'excludePatterns': excludePatterns,
-      'includePatterns': includePatterns,
-      'maxFileSize': maxFileSize,
-      'enableCache': enableCache,
-      'cacheDirectory': cacheDirectory,
-      'cacheDuration': cacheDuration.inSeconds,
-      'maxConcurrentRequests': maxConcurrentRequests,
-      'enableIsolatePool': enableIsolatePool,
-      'isolatePoolSize': isolatePoolSize,
-      'max_retries': maxRetries,
-      'retry_delay_seconds': retryDelay.inSeconds,
-    };
-  }
-
-  /// Creates a copy of this config object with the given fields replaced.
-  GithubAnalyzerConfig copyWith({
+  factory GithubAnalyzerConfig({
     String? githubToken,
     List<String>? excludePatterns,
     List<String>? includePatterns,
-    int? maxFileSize,
-    bool? enableCache,
+    int maxFileSize = kDefaultMaxFileSize,
+    bool enableCache = true,
     String? cacheDirectory,
-    Duration? cacheDuration,
-    int? maxConcurrentRequests,
-    bool? enableIsolatePool,
+    Duration cacheDuration = kDefaultCacheDuration,
+    int maxConcurrentRequests = kDefaultMaxConcurrentRequests,
+    bool enableIsolatePool = true,
     int? isolatePoolSize,
-    int? maxRetries,
-    Duration? retryDelay,
+    int maxRetries = kDefaultMaxRetries,
+    Duration retryDelay = const Duration(seconds: 2),
+    bool excludeGeneratedFiles = true,
+    int maxTotalFiles = 0,
+    bool prioritizeImportantFiles = true,
+  }) {
+    final size =
+        isolatePoolSize ?? (Platform.isAndroid || Platform.isIOS ? 2 : 4);
+
+    return GithubAnalyzerConfig._private(
+      githubToken: githubToken,
+      excludePatterns: excludePatterns ?? kDefaultExcludePatterns,
+      includePatterns: includePatterns ?? const [],
+      maxFileSize: maxFileSize,
+      enableCache: enableCache,
+      cacheDirectory: cacheDirectory ?? '.github_analyzer_cache',
+      cacheDuration: cacheDuration,
+      maxConcurrentRequests: maxConcurrentRequests,
+      enableIsolatePool: enableIsolatePool,
+      isolatePoolSize: size,
+      maxRetries: maxRetries,
+      retryDelay: retryDelay,
+      excludeGeneratedFiles: excludeGeneratedFiles,
+      maxTotalFiles: maxTotalFiles,
+      prioritizeImportantFiles: prioritizeImportantFiles,
+    );
+  }
+
+  factory GithubAnalyzerConfig.quick({
+    String? githubToken,
+    List<String>? excludePatterns,
   }) {
     return GithubAnalyzerConfig(
-      githubToken: githubToken ?? this.githubToken,
-      excludePatterns: excludePatterns ?? this.excludePatterns,
-      includePatterns: includePatterns ?? this.includePatterns,
-      maxFileSize: maxFileSize ?? this.maxFileSize,
-      enableCache: enableCache ?? this.enableCache,
-      cacheDirectory: cacheDirectory ?? this.cacheDirectory,
-      cacheDuration: cacheDuration ?? this.cacheDuration,
-      maxConcurrentRequests:
-          maxConcurrentRequests ?? this.maxConcurrentRequests,
-      enableIsolatePool: enableIsolatePool ?? this.enableIsolatePool,
-      isolatePoolSize: isolatePoolSize ?? this.isolatePoolSize,
-      maxRetries: maxRetries ?? this.maxRetries,
-      retryDelay: retryDelay ?? this.retryDelay,
+      githubToken: githubToken,
+      excludePatterns: excludePatterns,
+      enableCache: false,
+      enableIsolatePool: false,
+      maxTotalFiles: 100,
+      excludeGeneratedFiles: true,
+      prioritizeImportantFiles: true,
     );
+  }
+
+  factory GithubAnalyzerConfig.forLLM({
+    String? githubToken,
+    List<String>? excludePatterns,
+    int maxFiles = 200,
+  }) {
+    return GithubAnalyzerConfig(
+      githubToken: githubToken,
+      excludePatterns: [
+        ...kDefaultExcludePatterns,
+        ...?excludePatterns,
+        'test/**',
+        'tests/**',
+        '**_test.dart',
+        'example/**',
+      ],
+      excludeGeneratedFiles: true,
+      maxTotalFiles: maxFiles,
+      prioritizeImportantFiles: true,
+    );
+  }
+
+  List<String> get effectiveExcludePatterns {
+    if (!excludeGeneratedFiles) {
+      return excludePatterns;
+    }
+
+    return [
+      ...excludePatterns,
+      '*.g.dart',
+      '*.freezed.dart',
+      '*.gr.dart',
+      '*.config.dart',
+      '*.pb.dart',
+      '*.pbenum.dart',
+      '*.pbgrpc.dart',
+      '*.pbjson.dart',
+    ];
   }
 }
