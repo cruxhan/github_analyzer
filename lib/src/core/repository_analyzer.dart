@@ -1,6 +1,4 @@
-// lib/src/core/repository_analyzer.dart
-
-import 'dart:io';
+import 'package:universal_io/io.dart';
 import 'dart:convert';
 import 'package:archive/archive.dart';
 import 'package:github_analyzer/src/common/config.dart';
@@ -13,19 +11,18 @@ import 'package:github_analyzer/src/models/analysis_error.dart';
 import 'package:github_analyzer/src/infrastructure/isolate_pool.dart';
 import 'package:path/path.dart' as path;
 
-/// Analyzes the repository files from a local directory or a memory archive.
+/// Analyzes repository files from a local directory or memory archive
 class RepositoryAnalyzer {
   final GithubAnalyzerConfig config;
   final IsolatePool? isolatePool;
-  final List<AnalysisError> errors = [];
+  final List<AnalysisError> _errors = [];
 
-  /// Creates an instance of [RepositoryAnalyzer].
   RepositoryAnalyzer({
     required this.config,
     this.isolatePool,
   });
 
-  /// Analyzes a directory recursively to extract source files.
+  /// Analyzes a directory recursively to extract source files
   Future<List<SourceFile>> analyzeDirectory(String directoryPath) async {
     logger.info('Analyzing directory: $directoryPath');
 
@@ -38,131 +35,134 @@ class RepositoryAnalyzer {
     }
 
     final fileEntities = <File>[];
-    try {
-      final entities = dir.list(recursive: true);
-      await for (final entity in entities) {
-        if (entity is File) {
-          final relativePath = path.relative(entity.path, from: directoryPath);
-          if (shouldExclude(relativePath, config.excludePatterns)) {
-            logger.finer('Excluded by pattern: $relativePath');
-            continue;
-          }
-          fileEntities.add(entity);
+    await for (final entity in dir.list(recursive: true)) {
+      if (entity is File) {
+        final relativePath = path.relative(entity.path, from: directoryPath);
+        if (shouldExclude(relativePath, config.effectiveExcludePatterns)) {
+          continue;
         }
+        fileEntities.add(entity);
       }
-    } catch (e, stackTrace) {
-      logger.severe('Error listing directory contents.', e, stackTrace);
     }
 
-    final files = await _processFiles(fileEntities, directoryPath);
+    logger.info('Found ${fileEntities.length} files to analyze');
 
-    logger.info(
-      'Analysis completed: ${files.length} files, ${errors.length} errors',
-    );
-    return files;
+    if (isolatePool != null && config.enableIsolatePool) {
+      return await _analyzeFilesInParallel(fileEntities, directoryPath);
+    } else {
+      return await _analyzeFilesSequentially(fileEntities, directoryPath);
+    }
   }
 
-  /// Analyzes an in-memory archive to extract source files.
+  /// Analyzes an archive in memory
   Future<List<SourceFile>> analyzeArchive(Archive archive) async {
-    logger.info('Analyzing archive from memory...');
+    logger.info('Analyzing archive with ${archive.length} entries');
+
     final files = <SourceFile>[];
-    String? baseDir;
+    String? rootPrefix;
 
-    if (archive.isNotEmpty && archive.first.name.contains('/')) {
-      baseDir = archive.first.name.split('/').first;
-    }
+    for (final file in archive.files) {
+      if (file.isFile) {
+        rootPrefix ??= _detectRootPrefix(file.name);
+        var relativePath = file.name;
 
-    final archiveFiles = archive.where((f) => f.isFile).toList();
-
-    for (final file in archiveFiles) {
-      final relativePath =
-          (baseDir != null && file.name.startsWith('$baseDir/'))
-              ? file.name.substring(baseDir.length + 1)
-              : file.name;
-
-      if (relativePath.isEmpty ||
-          shouldExclude(relativePath, config.excludePatterns)) {
-        logger.finer('Excluded by pattern: $relativePath');
-        continue;
-      }
-
-      try {
-        final sourceFile = await _analyzeArchiveFile(
-          file,
-          relativePath,
-          config.maxFileSize,
-        );
-        if (sourceFile != null) {
-          files.add(sourceFile);
+        if (rootPrefix.isNotEmpty &&
+            relativePath.startsWith(rootPrefix) &&
+            relativePath.length > rootPrefix.length) {
+          relativePath = relativePath.substring(rootPrefix.length);
         }
-      } catch (e, stackTrace) {
-        logger.warning(
-            'Failed to analyze archive file ${file.name}', e, stackTrace);
-        errors.add(
-          AnalysisError(
-            path: relativePath,
-            message: e.toString(),
-            stackTrace: stackTrace.toString(),
-            timestamp: DateTime.now(),
-          ),
-        );
-      }
-    }
 
-    logger.info(
-      'Archive analysis completed: ${files.length} files, ${errors.length} errors',
-    );
-    return files;
-  }
+        if (shouldExclude(relativePath, config.effectiveExcludePatterns)) {
+          continue;
+        }
 
-  Future<List<SourceFile>> _processFiles(
-    List<File> fileEntities,
-    String basePath,
-  ) async {
-    if (isolatePool != null && fileEntities.length > 50) {
-      logger.info(
-        'Using isolate pool for parallel analysis of ${fileEntities.length} files.',
-      );
-
-      final fileDataForIsolates = fileEntities.map((file) {
-        return {
-          'filePath': file.path,
-          'basePath': basePath,
-          'maxFileSize': config.maxFileSize,
-        };
-      }).toList();
-
-      final results = await isolatePool!.executeAll(
-        _analyzeFileInIsolate,
-        fileDataForIsolates,
-      );
-
-      final files = <SourceFile>[];
-      for (var result in results) {
-        if (result is SourceFile) {
-          files.add(result);
-        } else if (result is Map<String, String>) {
-          errors.add(
+        try {
+          final sourceFile = await _analyzeArchiveFile(
+            file,
+            relativePath,
+            config.maxFileSize,
+          );
+          if (sourceFile != null) {
+            files.add(sourceFile);
+          }
+        } catch (e, stackTrace) {
+          logger.warning(
+              'Failed to analyze archive file: $relativePath', e, stackTrace);
+          _errors.add(
             AnalysisError(
-              path: result['path']!,
-              message: result['error']!,
-              stackTrace: result['stackTrace'],
+              path: relativePath,
+              message: e.toString(),
+              stackTrace: stackTrace.toString(),
               timestamp: DateTime.now(),
             ),
           );
         }
       }
+    }
+
+    logger.info('Archive analysis completed: ${files.length} files analyzed');
+    return files;
+  }
+
+  /// Analyzes files in parallel using isolate pool
+  Future<List<SourceFile>> _analyzeFilesInParallel(
+    List<File> fileEntities,
+    String basePath,
+  ) async {
+    logger.info('Analyzing files in parallel with isolate pool');
+
+    final args = fileEntities.map((entity) {
+      return {
+        'filePath': entity.path,
+        'basePath': basePath,
+        'maxFileSize': config.maxFileSize,
+      };
+    }).toList();
+
+    try {
+      final results = await isolatePool!.executeAll(
+        _analyzeFileInIsolate,
+        args,
+      );
+
+      final files = <SourceFile>[];
+      for (int i = 0; i < results.length; i++) {
+        final result = results[i];
+        if (result is Map<String, dynamic>) {
+          if (result.containsKey('error')) {
+            final relativePath = path.relative(
+              fileEntities[i].path,
+              from: basePath,
+            );
+            _errors.add(
+              AnalysisError(
+                path: relativePath,
+                message: result['error'] as String,
+                stackTrace: result['stackTrace'] as String?,
+                timestamp: DateTime.now(),
+              ),
+            );
+          } else {
+            files.add(SourceFile.fromJson(result));
+          }
+        }
+      }
+
       return files;
-    } else {
-      return _analyzeFilesSequentially(fileEntities, basePath);
+    } catch (e, stackTrace) {
+      logger.warning('Parallel analysis failed, falling back to sequential', e,
+          stackTrace);
+      return await _analyzeFilesSequentially(fileEntities, basePath);
     }
   }
 
+  /// Analyzes files sequentially
   Future<List<SourceFile>> _analyzeFilesSequentially(
     List<File> fileEntities,
     String basePath,
   ) async {
     final files = <SourceFile>[];
+
     for (final entity in fileEntities) {
       final relativePath = path.relative(entity.path, from: basePath);
       try {
@@ -175,8 +175,8 @@ class RepositoryAnalyzer {
           files.add(sourceFile);
         }
       } catch (e, stackTrace) {
-        logger.warning('Failed to analyze file ${entity.path}', e, stackTrace);
-        errors.add(
+        logger.warning('Failed to analyze file: ${entity.path}', e, stackTrace);
+        _errors.add(
           AnalysisError(
             path: relativePath,
             message: e.toString(),
@@ -186,21 +186,23 @@ class RepositoryAnalyzer {
         );
       }
     }
+
     return files;
   }
 
+  /// Isolate worker function for parallel file analysis
   static Future<dynamic> _analyzeFileInIsolate(
-    Map<String, dynamic> args,
-  ) async {
+      Map<String, dynamic> args) async {
     final String filePath = args['filePath'];
     final String basePath = args['basePath'];
     final int maxFileSize = args['maxFileSize'];
-    final File file = File(filePath);
 
+    final File file = File(filePath);
     final relativePath = path.relative(filePath, from: basePath);
 
     try {
       final stat = await file.stat();
+
       if (stat.size > maxFileSize) {
         return null;
       }
@@ -208,6 +210,7 @@ class RepositoryAnalyzer {
       final isBinary = isBinaryFile(relativePath);
       String? content;
       int lineCount = 0;
+
       if (!isBinary) {
         try {
           content = await file.readAsString();
@@ -220,9 +223,10 @@ class RepositoryAnalyzer {
             true,
             0,
             stat.modified,
-          );
+          ).toJson();
         }
       }
+
       return _createFileModelFromData(
         relativePath,
         stat.size,
@@ -230,7 +234,7 @@ class RepositoryAnalyzer {
         isBinary,
         lineCount,
         stat.modified,
-      );
+      ).toJson();
     } catch (e, stackTrace) {
       return {
         'path': relativePath,
@@ -240,6 +244,50 @@ class RepositoryAnalyzer {
     }
   }
 
+  /// Analyzes a single file from the file system
+  Future<SourceFile?> _analyzeFile(
+    File file,
+    String relativePath,
+    int maxFileSize,
+  ) async {
+    final stat = await file.stat();
+
+    if (stat.size > maxFileSize) {
+      logger.finer('Excluded large file: $relativePath');
+      return null;
+    }
+
+    final isBinary = isBinaryFile(relativePath);
+    String? content;
+    int lineCount = 0;
+
+    if (!isBinary) {
+      try {
+        content = await file.readAsString();
+        lineCount = content.split('\n').length;
+      } catch (e) {
+        return _createFileModelFromData(
+          relativePath,
+          stat.size,
+          null,
+          true,
+          0,
+          stat.modified,
+        );
+      }
+    }
+
+    return _createFileModelFromData(
+      relativePath,
+      stat.size,
+      content,
+      isBinary,
+      lineCount,
+      stat.modified,
+    );
+  }
+
+  /// Analyzes a single file from an archive
   Future<SourceFile?> _analyzeArchiveFile(
     ArchiveFile file,
     String relativePath,
@@ -257,10 +305,13 @@ class RepositoryAnalyzer {
 
     if (!isBinary) {
       try {
-        content = utf8.decode(file.content as List<int>, allowMalformed: true);
+        content = utf8.decode(
+          file.content as List<int>,
+          allowMalformed: true,
+        );
         lineCount = content.split('\n').length;
       } catch (e) {
-        logger.finer('Failed to read archive file as text $relativePath: $e');
+        logger.finer('Failed to read archive file as text: $relativePath ($e)');
         return _createFileModel(
           relativePath,
           file.size,
@@ -282,102 +333,62 @@ class RepositoryAnalyzer {
     );
   }
 
-  Future<SourceFile?> _analyzeFile(
-    File file,
+  /// Creates a SourceFile model from analyzed data
+  static SourceFile _createFileModelFromData(
     String relativePath,
-    int maxFileSize,
-  ) async {
-    final stat = await file.stat();
-    if (stat.size > maxFileSize) {
-      logger.finer('Excluded large file: $relativePath');
-      return null;
-    }
+    int size,
+    String? content,
+    bool isBinary,
+    int lineCount,
+    DateTime timestamp,
+  ) {
+    final language = detectLanguage(relativePath);
+    final isSrc = language != null && !isBinary;
+    final isConfig = isConfigurationFile(relativePath);
+    final isDoc = isDocumentationFile(relativePath);
 
-    final isBinary = isBinaryFile(relativePath);
-    String? content;
-    int lineCount = 0;
+    return SourceFile(
+      path: relativePath,
+      content: content,
+      size: size,
+      language: language,
+      isBinary: isBinary,
+      lineCount: lineCount,
+      isSourceCode: isSrc,
+      isConfiguration: isConfig,
+      isDocumentation: isDoc,
+      timestamp: timestamp,
+    );
+  }
 
-    if (!isBinary) {
-      try {
-        content = await file.readAsString();
-        lineCount = content.split('\n').length;
-      } catch (e) {
-        logger.finer('Failed to read file as text $relativePath: $e');
-        return _createFileModel(
-          relativePath,
-          stat.size,
-          null,
-          true,
-          0,
-          stat.modified,
-        );
-      }
-    }
-    return _createFileModel(
+  /// Creates a SourceFile model
+  static SourceFile _createFileModel(
+    String relativePath,
+    int size,
+    String? content,
+    bool isBinary,
+    int lineCount,
+    DateTime timestamp,
+  ) {
+    return _createFileModelFromData(
       relativePath,
-      stat.size,
+      size,
       content,
       isBinary,
       lineCount,
-      stat.modified,
+      timestamp,
     );
   }
 
-  SourceFile _createFileModel(
-    String path,
-    int size,
-    String? content,
-    bool isBinary,
-    int lineCount,
-    DateTime timestamp,
-  ) {
-    final language = detectLanguage(path);
-    final isDoc = isDocumentationFile(path);
-    final isConfig = isConfigurationFile(path);
-    final isSrc = language != null && !isBinary && !isDoc && !isConfig;
-
-    return SourceFile(
-      path: path,
-      content: content,
-      size: size,
-      language: language,
-      isBinary: isBinary,
-      lineCount: lineCount,
-      isSourceCode: isSrc,
-      isConfiguration: isConfig,
-      isDocumentation: isDoc,
-      timestamp: timestamp,
-    );
+  /// Detects the root prefix in archive entries
+  String _detectRootPrefix(String path) {
+    final parts = path.split('/');
+    return parts.length > 1 ? '${parts[0]}/' : '';
   }
 
-  static SourceFile _createFileModelFromData(
-    String path,
-    int size,
-    String? content,
-    bool isBinary,
-    int lineCount,
-    DateTime timestamp,
-  ) {
-    final language = detectLanguage(path);
-    final isDoc = isDocumentationFile(path);
-    final isConfig = isConfigurationFile(path);
-    final isSrc = language != null && !isBinary && !isDoc && !isConfig;
+  /// Gets all errors that occurred during analysis
+  List<AnalysisError> getErrors() => List.unmodifiable(_errors);
 
-    return SourceFile(
-      path: path,
-      content: content,
-      size: size,
-      language: language,
-      isBinary: isBinary,
-      lineCount: lineCount,
-      isSourceCode: isSrc,
-      isConfiguration: isConfig,
-      isDocumentation: isDoc,
-      timestamp: timestamp,
-    );
-  }
-
-  List<AnalysisError> getErrors() => List.unmodifiable(errors);
-
-  void clearErrors() => errors.clear();
+  /// Clears all errors
+  void clearErrors() => _errors.clear();
 }

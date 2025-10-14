@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:github_analyzer/src/common/constants.dart';
 
 /// Configuration class for the GithubAnalyzer
@@ -15,7 +14,6 @@ class GithubAnalyzerConfig {
   final int isolatePoolSize;
   final int maxRetries;
   final Duration retryDelay;
-
   final bool excludeGeneratedFiles;
   final int maxTotalFiles;
   final bool prioritizeImportantFiles;
@@ -55,8 +53,8 @@ class GithubAnalyzerConfig {
     int maxTotalFiles = 0,
     bool prioritizeImportantFiles = true,
   }) {
-    final size =
-        isolatePoolSize ?? (Platform.isAndroid || Platform.isIOS ? 2 : 4);
+    // Determine default isolate pool size based on platform
+    final size = isolatePoolSize ?? _getDefaultIsolatePoolSize();
 
     return GithubAnalyzerConfig._private(
       githubToken: githubToken,
@@ -77,6 +75,7 @@ class GithubAnalyzerConfig {
     );
   }
 
+  /// Quick analysis factory for fast results
   factory GithubAnalyzerConfig.quick({
     String? githubToken,
     List<String>? excludePatterns,
@@ -92,6 +91,7 @@ class GithubAnalyzerConfig {
     );
   }
 
+  /// Configuration optimized for LLM context generation
   factory GithubAnalyzerConfig.forLLM({
     String? githubToken,
     List<String>? excludePatterns,
@@ -102,10 +102,10 @@ class GithubAnalyzerConfig {
       excludePatterns: [
         ...kDefaultExcludePatterns,
         ...?excludePatterns,
-        'test/**',
-        'tests/**',
-        '**_test.dart',
-        'example/**',
+        'test/',
+        'tests/',
+        '**test.dart',
+        'example/',
       ],
       excludeGeneratedFiles: true,
       maxTotalFiles: maxFiles,
@@ -113,21 +113,27 @@ class GithubAnalyzerConfig {
     );
   }
 
+  /// Get effective exclude patterns including generated files
   List<String> get effectiveExcludePatterns {
-    if (!excludeGeneratedFiles) {
-      return excludePatterns;
-    }
+    if (!excludeGeneratedFiles) return excludePatterns;
 
     return [
       ...excludePatterns,
-      '*.g.dart',
-      '*.freezed.dart',
-      '*.gr.dart',
-      '*.config.dart',
-      '*.pb.dart',
-      '*.pbenum.dart',
-      '*.pbgrpc.dart',
-      '*.pbjson.dart',
+      '**.g.dart',
+      '**.freezed.dart',
+      '**.gr.dart',
+      '**.config.dart',
+      '**.pb.dart',
+      '**.pbenum.dart',
+      '**.pbgrpc.dart',
+      '**.pbjson.dart',
     ];
+  }
+
+  /// Determine default isolate pool size based on platform
+  static int _getDefaultIsolatePoolSize() {
+    // For web platforms, use smaller pool size
+    // This is a simple heuristic - adjust based on your needs
+    return 4; // Default for all platforms
   }
 }

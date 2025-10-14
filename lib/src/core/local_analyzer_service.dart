@@ -9,28 +9,21 @@ import 'package:github_analyzer/src/models/analysis_statistics.dart';
 import 'package:github_analyzer/src/core/incremental_analyzer.dart';
 import 'package:path/path.dart' as path;
 
-/// Service responsible for analyzing local file directories.
-///
-/// It can perform a full analysis or an incremental analysis if a previous
-/// result is provided.
+/// Service responsible for analyzing local file directories
 class LocalAnalyzerService {
   final GithubAnalyzerConfig config;
-  final RepositoryAnalyzer _repositoryAnalyzer;
-  final IncrementalAnalyzer _incrementalAnalyzer;
+  final RepositoryAnalyzer repositoryAnalyzer;
+  final IncrementalAnalyzer incrementalAnalyzer;
 
-  /// Creates an instance of [LocalAnalyzerService].
   LocalAnalyzerService({
     required this.config,
     RepositoryAnalyzer? repositoryAnalyzer,
-  })  : _repositoryAnalyzer =
+  })  : repositoryAnalyzer =
             repositoryAnalyzer ?? RepositoryAnalyzer(config: config),
-        _incrementalAnalyzer = IncrementalAnalyzer(config: config);
+        incrementalAnalyzer = IncrementalAnalyzer(config: config);
 
-  /// Analyzes a local directory.
-  ///
-  /// If [previousResult] is provided, it performs an incremental analysis
-  /// by comparing the current state with the previous one. Otherwise, it
-  /// performs a full analysis.
+  /// Analyzes a local directory
+  /// If previousResult is provided, performs incremental analysis
   Future<AnalysisResult> analyze(
     String directoryPath, {
     AnalysisResult? previousResult,
@@ -39,19 +32,14 @@ class LocalAnalyzerService {
 
     if (previousResult != null) {
       logger.info(
-        'Previous analysis result found, performing incremental analysis.',
-      );
+          'Previous analysis result found, performing incremental analysis.');
       try {
-        // Note: Incremental analysis will re-use the directory tree from the
-        // previous result for now. A more sophisticated approach could update
-        // the tree based on changes, but that adds significant complexity.
-        final result = await _incrementalAnalyzer.analyze(
+        final result = await incrementalAnalyzer.analyze(
           directoryPath,
           previousResult: previousResult,
         );
         logger.info(
-          'Incremental analysis completed: ${result.files.length} files analyzed',
-        );
+            'Incremental analysis completed: ${result.files.length} files analyzed');
         return result;
       } catch (e, stackTrace) {
         logger.warning(
@@ -63,7 +51,7 @@ class LocalAnalyzerService {
     }
 
     logger.info('Performing full analysis.');
-    final files = await _repositoryAnalyzer.analyzeDirectory(directoryPath);
+    final files = await repositoryAnalyzer.analyzeDirectory(directoryPath);
     final statistics = AnalysisStatistics.fromSourceFiles(files);
     final filePaths = files.map((f) => f.path).toList();
     final directoryTree = DirectoryTreeGenerator.generate(filePaths);
@@ -91,11 +79,10 @@ class LocalAnalyzerService {
 
     final mainFiles = identifyMainFiles(files);
     final dependencies = extractDependencies(files);
-    final errors = _repositoryAnalyzer.getErrors();
+    final errors = repositoryAnalyzer.getErrors();
 
-    logger.info(
-      'Full local analysis completed: ${files.length} files analyzed',
-    );
+    logger
+        .info('Full local analysis completed: ${files.length} files analyzed');
 
     return AnalysisResult(
       metadata: metadata,

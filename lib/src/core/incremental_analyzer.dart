@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:universal_io/io.dart';
 import 'package:github_analyzer/src/common/config.dart';
 import 'package:github_analyzer/src/common/logger.dart';
 import 'package:github_analyzer/src/models/analysis_result.dart';
@@ -8,35 +8,32 @@ import 'package:github_analyzer/src/common/utils/file_utils.dart';
 import 'package:path/path.dart' as path;
 import 'package:github_analyzer/src/common/language_info.dart';
 
-/// Represents the changes detected between two analysis runs.
+/// Represents the changes detected between two analysis runs
 class FileChange {
   final List<String> added;
   final List<String> modified;
   final List<String> deleted;
 
-  /// Creates an instance of [FileChange].
   FileChange({
     required this.added,
     required this.modified,
     required this.deleted,
   });
 
-  /// Returns true if no changes were detected.
+  /// Returns true if no changes were detected
   bool get isEmpty => added.isEmpty && modified.isEmpty && deleted.isEmpty;
 
-  /// The total number of changed files.
+  /// Total number of changed files
   int get length => added.length + modified.length + deleted.length;
 }
 
-/// Performs an incremental analysis by comparing the current state of a
-/// repository with a previous analysis result.
+/// Performs incremental analysis by comparing current state with previous result
 class IncrementalAnalyzer {
   final GithubAnalyzerConfig config;
 
-  /// Creates an instance of [IncrementalAnalyzer].
   IncrementalAnalyzer({required this.config});
 
-  /// Analyzes a local directory based on a previous analysis result.
+  /// Analyzes a local directory based on previous analysis result
   Future<AnalysisResult> analyze(
     String directoryPath, {
     required AnalysisResult previousResult,
@@ -58,13 +55,17 @@ class IncrementalAnalyzer {
     return await _analyzeChanges(directoryPath, previousResult, changes);
   }
 
+  /// Analyzes only the changed files and merges with previous result
   Future<AnalysisResult> _analyzeChanges(
     String directoryPath,
     AnalysisResult previousResult,
     FileChange changes,
   ) async {
-    final fileMap = {for (var f in previousResult.files) f.path: f};
+    final fileMap = <String, SourceFile>{
+      for (var f in previousResult.files) f.path: f,
+    };
 
+    // Process added and modified files
     for (final changedPath in [...changes.added, ...changes.modified]) {
       final file = File(path.join(directoryPath, changedPath));
       if (!await file.exists()) continue;
@@ -79,6 +80,7 @@ class IncrementalAnalyzer {
       }
     }
 
+    // Remove deleted files
     for (final deletedPath in changes.deleted) {
       fileMap.remove(deletedPath);
     }
@@ -104,13 +106,14 @@ class IncrementalAnalyzer {
       statistics: statistics,
       mainFiles: identifyMainFiles(allFiles),
       dependencies: extractDependencies(allFiles),
-      errors:
-          previousResult.errors, // Note: errors from previous run are preserved
+      errors: previousResult.errors,
     );
   }
 
+  /// Analyzes a single file and returns SourceFile model
   Future<SourceFile?> _analyzeFile(File file, String relativePath) async {
     final stat = await file.stat();
+
     if (stat.size > config.maxFileSize) {
       logger.finer('Skipping large file in incremental scan: $relativePath');
       return null;
@@ -128,7 +131,7 @@ class IncrementalAnalyzer {
         logger.finer(
           'Failed to read file as text in incremental scan: $relativePath, error: $e',
         );
-        // If reading as text fails, treat it as a binary file for statistics.
+        // Treat as binary if reading fails
         return SourceFile(
           path: relativePath,
           content: null,
@@ -160,6 +163,7 @@ class IncrementalAnalyzer {
     );
   }
 
+  /// Detects changes between current directory state and previous result
   Future<FileChange> _detectChanges(
     String directoryPath,
     AnalysisResult previousResult,
@@ -172,8 +176,11 @@ class IncrementalAnalyzer {
       throw Exception('Directory not found: $directoryPath');
     }
 
-    final previousFilesMap = {for (var f in previousResult.files) f.path: f};
-    final currentFilePaths = <String>{};
+    final previousFilesMap = <String, SourceFile>{
+      for (var f in previousResult.files) f.path: f,
+    };
+
+    final currentFilePaths = <String>[];
 
     await for (final entity in dir.list(recursive: true)) {
       if (entity is File) {
@@ -197,9 +204,15 @@ class IncrementalAnalyzer {
       }
     }
 
-    final deleted =
-        previousFilesMap.keys.toSet().difference(currentFilePaths).toList();
+    final deleted = previousFilesMap.keys
+        .toSet()
+        .difference(currentFilePaths.toSet())
+        .toList();
 
-    return FileChange(added: added, modified: modified, deleted: deleted);
+    return FileChange(
+      added: added,
+      modified: modified,
+      deleted: deleted,
+    );
   }
 }

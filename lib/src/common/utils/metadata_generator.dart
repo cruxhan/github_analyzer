@@ -1,35 +1,40 @@
-import 'dart:io';
+import 'package:universal_io/io.dart';
 import 'dart:convert';
 import 'package:github_analyzer/src/models/analysis_result.dart';
 
+/// Generates metadata JSON files from analysis results
 class MetadataGenerator {
-  static Future<void> generate(AnalysisResult result, String outputPath) async {
+  /// Generates and writes metadata to a file
+  static Future<void> generate(
+    AnalysisResult result,
+    String outputPath,
+  ) async {
     final metadata = {
       'repository': {
         'name': result.metadata.name,
-        'full_name': result.metadata.fullName,
+        'fullname': result.metadata.fullName,
         'description': result.metadata.description,
-        'is_private': result.metadata.isPrivate,
-        'default_branch': result.metadata.defaultBranch,
+        'isprivate': result.metadata.isPrivate,
+        'defaultbranch': result.metadata.defaultBranch,
         'language': result.metadata.language,
         'languages': result.metadata.languages,
         'stars': result.metadata.stars,
         'forks': result.metadata.forks,
       },
       'statistics': {
-        'total_files': result.statistics.totalFiles,
-        'total_lines': result.statistics.totalLines,
-        'total_size': result.statistics.totalSize,
-        'binary_files': result.statistics.binaryFiles,
-        'source_files': result.statistics.sourceFiles,
-        'config_files': result.statistics.configFiles,
-        'documentation_files': result.statistics.documentationFiles,
-        'language_distribution': result.statistics.languageDistribution,
+        'totalfiles': result.statistics.totalFiles,
+        'totallines': result.statistics.totalLines,
+        'totalsize': result.statistics.totalSize,
+        'binaryfiles': result.statistics.binaryFiles,
+        'sourcefiles': result.statistics.sourceFiles,
+        'configfiles': result.statistics.configFiles,
+        'documentationfiles': result.statistics.documentationFiles,
+        'languagedistribution': result.statistics.languageDistribution,
       },
-      'main_files': result.mainFiles,
+      'mainfiles': result.mainFiles,
       'dependencies': result.dependencies,
       'errors': result.errors.map((e) => e.toJson()).toList(),
-      'generated_at': DateTime.now().toIso8601String(),
+      'generatedat': DateTime.now().toIso8601String(),
     };
 
     final file = File(outputPath);
@@ -38,33 +43,34 @@ class MetadataGenerator {
     );
   }
 
+  /// Generates metadata as a Map without writing to file
   static Map<String, dynamic> generateMap(AnalysisResult result) {
     return {
       'repository': {
         'name': result.metadata.name,
-        'full_name': result.metadata.fullName,
+        'fullname': result.metadata.fullName,
         'description': result.metadata.description,
-        'is_private': result.metadata.isPrivate,
-        'default_branch': result.metadata.defaultBranch,
+        'isprivate': result.metadata.isPrivate,
+        'defaultbranch': result.metadata.defaultBranch,
         'language': result.metadata.language,
         'languages': result.metadata.languages,
         'stars': result.metadata.stars,
         'forks': result.metadata.forks,
       },
       'statistics': {
-        'total_files': result.statistics.totalFiles,
-        'total_lines': result.statistics.totalLines,
-        'total_size': result.statistics.totalSize,
-        'binary_files': result.statistics.binaryFiles,
-        'source_files': result.statistics.sourceFiles,
-        'config_files': result.statistics.configFiles,
-        'documentation_files': result.statistics.documentationFiles,
-        'language_distribution': result.statistics.languageDistribution,
+        'totalfiles': result.statistics.totalFiles,
+        'totallines': result.statistics.totalLines,
+        'totalsize': result.statistics.totalSize,
+        'binaryfiles': result.statistics.binaryFiles,
+        'sourcefiles': result.statistics.sourceFiles,
+        'configfiles': result.statistics.configFiles,
+        'documentationfiles': result.statistics.documentationFiles,
+        'languagedistribution': result.statistics.languageDistribution,
       },
-      'main_files': result.mainFiles,
+      'mainfiles': result.mainFiles,
       'dependencies': result.dependencies,
       'errors': result.errors.map((e) => e.toJson()).toList(),
-      'generated_at': DateTime.now().toIso8601String(),
+      'generatedat': DateTime.now().toIso8601String(),
     };
   }
 }
