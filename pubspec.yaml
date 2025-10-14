@@ -25,6 +25,9 @@ dependencies:
   # Cross-platform IO (web + native)
   universal_io: ^2.2.2
 
+  glob: ^2.1.2
+  crypto: ^3.0.3 
+
 dev_dependencies:
   # Testing
   test: ^1.25.2
