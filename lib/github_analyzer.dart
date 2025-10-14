@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:github_analyzer/src/common/config.dart';
 import 'package:github_analyzer/src/common/logger.dart';
+export 'src/common/env_loader.dart';
 import 'package:github_analyzer/src/core/cache_service.dart';
 import 'package:github_analyzer/src/core/local_analyzer_service.dart';
 import 'package:github_analyzer/src/core/remote_analyzer_service.dart';
@@ -121,7 +122,7 @@ Future<AnalysisResult> analyzeQuick(
 }) async {
   return await analyze(
     repositoryUrl,
-    config: GithubAnalyzerConfig.quick(githubToken: githubToken),
+    config: await GithubAnalyzerConfig.quick(githubToken: githubToken),
     progressCallback: progressCallback,
   );
 }
@@ -139,7 +140,7 @@ Future<String> analyzeForLLM(
 }) async {
   final result = await analyze(
     repositoryUrl,
-    config: GithubAnalyzerConfig.forLLM(
+    config: await GithubAnalyzerConfig.forLLM(
       githubToken: githubToken,
       maxFiles: maxFiles,
     ),

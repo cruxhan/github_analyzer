@@ -4,7 +4,10 @@ import 'package:github_analyzer/src/common/logger.dart';
 import 'package:github_analyzer/src/core/cache_service.dart';
 import 'package:github_analyzer/src/core/local_analyzer_service.dart';
 import 'package:github_analyzer/src/core/remote_analyzer_service.dart';
+import 'package:github_analyzer/src/core/repository_analyzer.dart';
+import 'package:github_analyzer/src/data/providers/github_api_provider.dart';
 import 'package:github_analyzer/src/data/providers/zip_downloader.dart';
+import 'package:github_analyzer/src/infrastructure/http_client_manager.dart';
 import 'package:github_analyzer/src/infrastructure/interfaces/i_github_api_provider.dart';
 import 'package:github_analyzer/src/infrastructure/interfaces/i_http_client_manager.dart';
 import 'package:github_analyzer/src/infrastructure/isolate_pool.dart';
@@ -42,6 +45,80 @@ class GithubAnalyzer {
     // Initialize services that require it
     cacheService?.initialize();
     isolatePool?.initialize();
+  }
+
+  /// Creates a GithubAnalyzer with automatic .env loading and dependency injection
+  static Future<GithubAnalyzer> create({
+    GithubAnalyzerConfig? config,
+  }) async {
+    // Create config with auto .env loading if not provided
+    final effectiveConfig = config ?? await GithubAnalyzerConfig.create();
+
+    // Create HTTP client manager
+    final httpClientManager = HttpClientManager(
+      requestTimeout: Duration(seconds: 30),
+      maxConcurrentRequests: effectiveConfig.maxConcurrentRequests,
+      maxRetries: effectiveConfig.maxRetries,
+    );
+
+    // Create API provider
+    final apiProvider = GithubApiProvider(
+      httpClientManager: httpClientManager,
+      token: effectiveConfig.githubToken,
+    );
+
+    // Create ZIP downloader
+    final zipDownloader = ZipDownloader(
+      httpClientManager: httpClientManager,
+    );
+
+    // Create cache service if enabled
+    CacheService? cacheService;
+    if (effectiveConfig.enableCache) {
+      cacheService = CacheService(
+        cacheDirectory: effectiveConfig.cacheDirectory,
+        maxAge: effectiveConfig.cacheDuration,
+      );
+      await cacheService.initialize();
+    }
+
+    // Create isolate pool if enabled
+    IsolatePool? isolatePool;
+    if (effectiveConfig.enableIsolatePool) {
+      isolatePool = IsolatePool(size: effectiveConfig.isolatePoolSize);
+      await isolatePool.initialize();
+    }
+
+    // Create repository analyzer
+    final repositoryAnalyzer = RepositoryAnalyzer(
+      config: effectiveConfig,
+      isolatePool: isolatePool,
+    );
+
+    // Create local analyzer service
+    final localAnalyzer = LocalAnalyzerService(
+      config: effectiveConfig,
+      repositoryAnalyzer: repositoryAnalyzer,
+    );
+
+    // Create remote analyzer service
+    final remoteAnalyzer = RemoteAnalyzerService(
+      config: effectiveConfig,
+      apiProvider: apiProvider,
+      zipDownloader: zipDownloader,
+      cacheService: cacheService,
+    );
+
+    return GithubAnalyzer(
+      config: effectiveConfig,
+      httpClientManager: httpClientManager,
+      apiProvider: apiProvider,
+      zipDownloader: zipDownloader,
+      localAnalyzer: localAnalyzer,
+      remoteAnalyzer: remoteAnalyzer,
+      cacheService: cacheService,
+      isolatePool: isolatePool,
+    );
   }
 
   /// Analyzes a local directory
