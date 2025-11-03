@@ -256,7 +256,6 @@ Future<void> example6_metadataOnly() async {
     print('   Forks: ${metadata.forks}');
     print('   Language: ${metadata.language}');
     print('   Default Branch: ${metadata.defaultBranch}');
-    print('   Topics: ${metadata.topics.join(", ")}');
     print('');
 
     await analyzer.dispose();
