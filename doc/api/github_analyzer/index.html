@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="github_analyzer library API docs, for the Dart programming language.">
+  <title>github_analyzer library - Dart API</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../static-assets/github.css?v1">
+  <link rel="stylesheet" href="../static-assets/styles.css?v1">
+  <link rel="icon" href="../static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="../" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="../index.html">github_analyzer</a></li>
+    <li class="self-crumb">github_analyzer.dart</li>
+  </ol>
+  <div class="self-name">github_analyzer</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+<div
+    id="dartdoc-main-content"
+    class="main-content"
+    data-above-sidebar=""
+    data-below-sidebar="github_analyzer&#47;github_analyzer-library-sidebar.html">
+  
+    <div>
+      
+
+      <h1>
+        <span class="kind-library">github_analyzer</span>
+        library 
+ 
+
+      </h1>
+    </div>
+
+    
+<section class="desc markdown">
+  <p>A Dart package for analyzing GitHub repositories and generating comprehensive documentation.</p>
+<p>This library provides a set of high-level functions for analyzing both local and remote
+GitHub repositories, with built-in support for caching, parallel processing, and
+progress tracking.</p>
+<h2 id="features">Features</h2>
+<ul>
+<li>Analyze GitHub repositories (both public and private)</li>
+<li>Generate markdown documentation optimized for LLM context</li>
+<li>Support for incremental analysis with caching</li>
+<li>Progress tracking with real-time updates</li>
+<li>Automatic language detection and statistics</li>
+<li>Directory tree generation</li>
+<li>Dependency extraction</li>
+</ul>
+<h2 id="example">Example</h2>
+<pre class="language-dart"><code>import 'package:github_analyzer/github_analyzer.dart';
+
+void main() async {
+  // Basic analysis
+  final result = await analyze('https://github.com/user/repo');
+  print('Found ${result.files.length} files');
+
+  // Analysis with markdown generation
+  final markdown = await analyzeAndGenerate(
+    'https://github.com/user/repo',
+    outputDir: './output',
+  );
+
+  // Quick analysis with minimal output
+  final quickResult = await analyzeQuick('https://github.com/user/repo');
+
+  // LLM-optimized analysis
+  final llmContext = await analyzeForLLM(
+    'https://github.com/user/repo',
+    githubToken: 'your-github-token',
+    maxFiles: 200,
+  );
+}
+</code></pre>
+</section>
+
+
+    <section class="summary offset-anchor" id="classes">
+      <h2>Classes</h2>
+      <dl>
+          <dt id="AnalysisError">
+  <span class="name "><a href="../github_analyzer/AnalysisError-class.html">AnalysisError</a></span> 
+
+</dt>
+<dd>
+  Represents an error that occurred during analysis.
+</dd>
+
+          <dt id="AnalysisProgress">
+  <span class="name "><a href="../github_analyzer/AnalysisProgress-class.html">AnalysisProgress</a></span> 
+
+</dt>
+<dd>
+  Represents the progress of a repository analysis.
+</dd>
+
+          <dt id="AnalysisResult">
+  <span class="name "><a href="../github_analyzer/AnalysisResult-class.html">AnalysisResult</a></span> 
+
+</dt>
+<dd>
+  Represents the result of a repository analysis.
+</dd>
+
+          <dt id="AnalysisStatistics">
+  <span class="name "><a href="../github_analyzer/AnalysisStatistics-class.html">AnalysisStatistics</a></span> 
+
+</dt>
+<dd>
+  Represents statistical data from a repository analysis.
+</dd>
+
+          <dt id="ContextService">
+  <span class="name "><a href="../github_analyzer/ContextService-class.html">ContextService</a></span> 
+
+</dt>
+<dd>
+  Service for generating context output files from analysis results
+</dd>
+
+          <dt id="GithubAnalyzer">
+  <span class="name "><a href="../github_analyzer/GithubAnalyzer-class.html">GithubAnalyzer</a></span> 
+
+</dt>
+<dd>
+  Main analyzer class that orchestrates the repository analysis process.
+</dd>
+
+          <dt id="GithubAnalyzerConfig">
+  <span class="name "><a href="../github_analyzer/GithubAnalyzerConfig-class.html">GithubAnalyzerConfig</a></span> 
+
+</dt>
+<dd>
+  Configuration class for the GithubAnalyzer
+</dd>
+
+          <dt id="MarkdownConfig">
+  <span class="name "><a href="../github_analyzer/MarkdownConfig-class.html">MarkdownConfig</a></span> 
+
+</dt>
+<dd>
+  Configuration for markdown generation
+</dd>
+
+          <dt id="MarkdownService">
+  <span class="name "><a href="../github_analyzer/MarkdownService-class.html">MarkdownService</a></span> 
+
+</dt>
+<dd>
+  Service for generating markdown formatted output from analysis results
+</dd>
+
+          <dt id="RepositoryMetadata">
+  <span class="name "><a href="../github_analyzer/RepositoryMetadata-class.html">RepositoryMetadata</a></span> 
+
+</dt>
+<dd>
+  Represents metadata about a GitHub repository.
+</dd>
+
+          <dt id="SourceFile">
+  <span class="name "><a href="../github_analyzer/SourceFile-class.html">SourceFile</a></span> 
+
+</dt>
+<dd>
+  Represents a single source file in the repository.
+</dd>
+
+      </dl>
+    </section>
+
+    <section class="summary offset-anchor" id="enums">
+      <h2>Enums</h2>
+      <dl>
+          <dt id="AnalysisPhase">
+  <span class="name "><a href="../github_analyzer/AnalysisPhase.html">AnalysisPhase</a></span> 
+
+</dt>
+<dd>
+  Represents the different phases of the analysis process.
+</dd>
+
+          <dt id="AnalyzerErrorCode">
+  <span class="name "><a href="../github_analyzer/AnalyzerErrorCode.html">AnalyzerErrorCode</a></span> 
+
+</dt>
+<dd>
+  Defines the types of errors that can occur during analysis.
+</dd>
+
+      </dl>
+    </section>
+
+
+
+    <section class="summary offset-anchor" id="extensions">
+      <h2>Extensions</h2>
+      <dl>
+          <dt id="AnalysisErrorPatterns">
+  <span class="name "><a href="../github_analyzer/AnalysisErrorPatterns.html">AnalysisErrorPatterns</a></span>
+  on <a href="../github_analyzer/AnalysisError-class.html">AnalysisError</a>
+  
+
+</dt>
+<dd>
+  Adds pattern-matching-related methods to <a href="../github_analyzer/AnalysisError-class.html">AnalysisError</a>.
+</dd>
+
+          <dt id="AnalysisProgressPatterns">
+  <span class="name "><a href="../github_analyzer/AnalysisProgressPatterns.html">AnalysisProgressPatterns</a></span>
+  on <a href="../github_analyzer/AnalysisProgress-class.html">AnalysisProgress</a>
+  
+
+</dt>
+<dd>
+  Adds pattern-matching-related methods to <a href="../github_analyzer/AnalysisProgress-class.html">AnalysisProgress</a>.
+</dd>
+
+          <dt id="AnalysisResultPatterns">
+  <span class="name "><a href="../github_analyzer/AnalysisResultPatterns.html">AnalysisResultPatterns</a></span>
+  on <a href="../github_analyzer/AnalysisResult-class.html">AnalysisResult</a>
+  
+
+</dt>
+<dd>
+  Adds pattern-matching-related methods to <a href="../github_analyzer/AnalysisResult-class.html">AnalysisResult</a>.
+</dd>
+
+          <dt id="AnalysisStatisticsPatterns">
+  <span class="name "><a href="../github_analyzer/AnalysisStatisticsPatterns.html">AnalysisStatisticsPatterns</a></span>
+  on <a href="../github_analyzer/AnalysisStatistics-class.html">AnalysisStatistics</a>
+  
+
+</dt>
+<dd>
+  Adds pattern-matching-related methods to <a href="../github_analyzer/AnalysisStatistics-class.html">AnalysisStatistics</a>.
+</dd>
+
+          <dt id="RepositoryMetadataPatterns">
+  <span class="name "><a href="../github_analyzer/RepositoryMetadataPatterns.html">RepositoryMetadataPatterns</a></span>
+  on <a href="../github_analyzer/RepositoryMetadata-class.html">RepositoryMetadata</a>
+  
+
+</dt>
+<dd>
+  Adds pattern-matching-related methods to <a href="../github_analyzer/RepositoryMetadata-class.html">RepositoryMetadata</a>.
+</dd>
+
+          <dt id="SourceFilePatterns">
+  <span class="name "><a href="../github_analyzer/SourceFilePatterns.html">SourceFilePatterns</a></span>
+  on <a href="../github_analyzer/SourceFile-class.html">SourceFile</a>
+  
+
+</dt>
+<dd>
+  Adds pattern-matching-related methods to <a href="../github_analyzer/SourceFile-class.html">SourceFile</a>.
+</dd>
+
+      </dl>
+    </section>
+
+
+    <section class="summary offset-anchor" id="properties">
+      <h2>Properties</h2>
+      <dl class="properties">
+          <dt id="logger" class="property">
+  <span class="name"><a href="../github_analyzer/logger.html">logger</a></span>
+  <span class="signature">&#8594; <a href="https://pub.dev/documentation/logging/1.3.0/logging/Logger-class.html">Logger</a></span>
+  
+
+</dt>
+<dd>
+  The root logger for the application.
+  <div class="features"><span class="feature">final</span></div>
+
+</dd>
+
+      </dl>
+    </section>
+
+    <section class="summary offset-anchor" id="functions">
+      <h2>Functions</h2>
+      <dl class="callables">
+          <dt id="analyze" class="callable">
+  <span class="name"><a href="../github_analyzer/analyze.html">analyze</a></span><span class="signature">(<wbr><span class="parameter" id="analyze-param-repositoryUrl"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span> <span class="parameter-name">repositoryUrl</span>, {</span><span class="parameter" id="analyze-param-config"><span class="type-annotation"><a href="../github_analyzer/GithubAnalyzerConfig-class.html">GithubAnalyzerConfig</a>?</span> <span class="parameter-name">config</span>, </span><span class="parameter" id="analyze-param-progressCallback"><span class="type-annotation">void</span> <span class="parameter-name">progressCallback</span>(<span class="parameter" id="param-"><span class="type-annotation"><a href="../github_analyzer/AnalysisProgress-class.html">AnalysisProgress</a></span></span>)?, </span><span class="parameter" id="analyze-param-verbose"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span> <span class="parameter-name">verbose</span> = <span class="default-value">false</span>, </span><span class="parameter" id="analyze-param-useCache"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a>?</span> <span class="parameter-name">useCache</span></span>})
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="../github_analyzer/AnalysisResult-class.html">AnalysisResult</a></span>&gt;</span></span>
+  </span>
+  
+
+</dt>
+<dd>
+  Analyzes a GitHub repository and returns comprehensive analysis results.
+  
+
+</dd>
+
+          <dt id="analyzeAndGenerate" class="callable">
+  <span class="name"><a href="../github_analyzer/analyzeAndGenerate.html">analyzeAndGenerate</a></span><span class="signature">(<wbr><span class="parameter" id="analyzeAndGenerate-param-repositoryUrl"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span> <span class="parameter-name">repositoryUrl</span>, {</span><span class="parameter" id="analyzeAndGenerate-param-outputPath"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a>?</span> <span class="parameter-name">outputPath</span>, </span><span class="parameter" id="analyzeAndGenerate-param-outputDir"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a>?</span> <span class="parameter-name">outputDir</span>, </span><span class="parameter" id="analyzeAndGenerate-param-analyzerConfig"><span class="type-annotation"><a href="../github_analyzer/GithubAnalyzerConfig-class.html">GithubAnalyzerConfig</a>?</span> <span class="parameter-name">analyzerConfig</span>, </span><span class="parameter" id="analyzeAndGenerate-param-markdownConfig"><span class="type-annotation"><a href="../github_analyzer/MarkdownConfig-class.html">MarkdownConfig</a></span> <span class="parameter-name">markdownConfig</span> = <span class="default-value">MarkdownConfig.standard</span>, </span><span class="parameter" id="analyzeAndGenerate-param-progressCallback"><span class="type-annotation">void</span> <span class="parameter-name">progressCallback</span>(<span class="parameter" id="param-"><span class="type-annotation"><a href="../github_analyzer/AnalysisProgress-class.html">AnalysisProgress</a></span></span>)?, </span><span class="parameter" id="analyzeAndGenerate-param-verbose"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span> <span class="parameter-name">verbose</span> = <span class="default-value">false</span>, </span><span class="parameter" id="analyzeAndGenerate-param-useCache"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a>?</span> <span class="parameter-name">useCache</span></span>})
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span>&gt;</span></span>
+  </span>
+  
+
+</dt>
+<dd>
+  Analyzes a repository and generates markdown documentation in one step.
+  
+
+</dd>
+
+          <dt id="analyzeForLLM" class="callable">
+  <span class="name"><a href="../github_analyzer/analyzeForLLM.html">analyzeForLLM</a></span><span class="signature">(<wbr><span class="parameter" id="analyzeForLLM-param-repositoryUrl"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span> <span class="parameter-name">repositoryUrl</span>, {</span><span class="parameter" id="analyzeForLLM-param-outputPath"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a>?</span> <span class="parameter-name">outputPath</span>, </span><span class="parameter" id="analyzeForLLM-param-outputDir"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a>?</span> <span class="parameter-name">outputDir</span>, </span><span class="parameter" id="analyzeForLLM-param-githubToken"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a>?</span> <span class="parameter-name">githubToken</span>, </span><span class="parameter" id="analyzeForLLM-param-maxFiles"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/int-class.html">int</a></span> <span class="parameter-name">maxFiles</span> = <span class="default-value">200</span>, </span><span class="parameter" id="analyzeForLLM-param-markdownConfig"><span class="type-annotation"><a href="../github_analyzer/MarkdownConfig-class.html">MarkdownConfig</a></span> <span class="parameter-name">markdownConfig</span> = <span class="default-value">MarkdownConfig.standard</span>, </span><span class="parameter" id="analyzeForLLM-param-progressCallback"><span class="type-annotation">void</span> <span class="parameter-name">progressCallback</span>(<span class="parameter" id="param-"><span class="type-annotation"><a href="../github_analyzer/AnalysisProgress-class.html">AnalysisProgress</a></span></span>)?, </span><span class="parameter" id="analyzeForLLM-param-verbose"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span> <span class="parameter-name">verbose</span> = <span class="default-value">false</span>, </span><span class="parameter" id="analyzeForLLM-param-useCache"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a>?</span> <span class="parameter-name">useCache</span></span>})
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span>&gt;</span></span>
+  </span>
+  
+
+</dt>
+<dd>
+  Analyzes a repository and generates markdown optimized for LLM context.
+  
+
+</dd>
+
+          <dt id="analyzeQuick" class="callable">
+  <span class="name"><a href="../github_analyzer/analyzeQuick.html">analyzeQuick</a></span><span class="signature">(<wbr><span class="parameter" id="analyzeQuick-param-repositoryUrl"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span> <span class="parameter-name">repositoryUrl</span>, {</span><span class="parameter" id="analyzeQuick-param-githubToken"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a>?</span> <span class="parameter-name">githubToken</span>, </span><span class="parameter" id="analyzeQuick-param-progressCallback"><span class="type-annotation">void</span> <span class="parameter-name">progressCallback</span>(<span class="parameter" id="param-"><span class="type-annotation"><a href="../github_analyzer/AnalysisProgress-class.html">AnalysisProgress</a></span></span>)?, </span><span class="parameter" id="analyzeQuick-param-useCache"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a>?</span> <span class="parameter-name">useCache</span></span>})
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="../github_analyzer/AnalysisResult-class.html">AnalysisResult</a></span>&gt;</span></span>
+  </span>
+  
+
+</dt>
+<dd>
+  Performs a quick analysis with optimized settings for fast results.
+  
+
+</dd>
+
+          <dt id="setupLogger" class="callable">
+  <span class="name"><a href="../github_analyzer/setupLogger.html">setupLogger</a></span><span class="signature">(<wbr>{<span class="parameter" id="setupLogger-param-verbose"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span> <span class="parameter-name">verbose</span> = <span class="default-value">false</span></span>})
+    <span class="returntype parameter">&#8594; void</span>
+  </span>
+  
+
+</dt>
+<dd>
+  Sets up the logger for the application.
+  
+
+</dd>
+
+      </dl>
+    </section>
+
+
+    <section class="summary offset-anchor" id="exceptions">
+      <h2>Exceptions / Errors</h2>
+      <dl>
+          <dt id="AnalyzerException">
+  <span class="name "><a href="../github_analyzer/AnalyzerException-class.html">AnalyzerException</a></span> 
+
+</dt>
+<dd>
+  A custom exception class for handling errors within the analyzer.
+</dd>
+
+      </dl>
+    </section>
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li><a href="../index.html">github_analyzer</a></li>
+    <li class="self-crumb">github_analyzer.dart</li>
+</ol>
+
+    <h5><span class="package-name">github_analyzer</span> <span class="package-kind">package</span></h5>
+    <ol>
+      <li class="section-title">Libraries</li>
+      <li><a href="../github_analyzer/">github_analyzer</a></li>
+</ol>
+
+  </div>
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+    <h5>github_analyzer library</h5>
+  </div><!--/sidebar-offcanvas-right-->
+</main>
+<footer>
+  <span class="no-break">
+    github_analyzer
+      0.1.7
+  </span>
+  
+</footer>
+
+
+<script src="../static-assets/highlight.pack.js?v1"></script>
+<script src="../static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+

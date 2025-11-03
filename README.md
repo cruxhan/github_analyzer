@@ -32,13 +32,19 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  github_analyzer: ^0.1.6
+  github_analyzer: ^0.1.7
 ```
 
 Install:
 
 ```bash
 dart pub get
+```
+
+or
+
+```bash
+dart pub add github_analyzer
 ```
 
 ## 🚀 Quick Start
@@ -424,7 +430,7 @@ MIT License - See [LICENSE](LICENSE) file for details.
 5. **LLM Token Savings**: Use `MarkdownConfig.compact`
 6. **Private Repos**: Always pass `githubToken` parameter explicitly
 
-## 🆕 What's New in v0.1.5
+## 🆕 What's New in v0.1.7
 
 - ✅ **Fixed:** Cache now respects `useCache: false` parameter
 - ✅ **Changed:** Removed automatic .env loading for better security

@@ -1,7 +1,49 @@
+/// A Dart package for analyzing GitHub repositories and generating comprehensive documentation.
+///
+/// This library provides a set of high-level functions for analyzing both local and remote
+/// GitHub repositories, with built-in support for caching, parallel processing, and
+/// progress tracking.
+///
+/// ## Features
+///
+/// - Analyze GitHub repositories (both public and private)
+/// - Generate markdown documentation optimized for LLM context
+/// - Support for incremental analysis with caching
+/// - Progress tracking with real-time updates
+/// - Automatic language detection and statistics
+/// - Directory tree generation
+/// - Dependency extraction
+///
+/// ## Example
+///
+/// ```
+/// import 'package:github_analyzer/github_analyzer.dart';
+///
+/// void main() async {
+///   // Basic analysis
+///   final result = await analyze('https://github.com/user/repo');
+///   print('Found ${result.files.length} files');
+///
+///   // Analysis with markdown generation
+///   final markdown = await analyzeAndGenerate(
+///     'https://github.com/user/repo',
+///     outputDir: './output',
+///   );
+///
+///   // Quick analysis with minimal output
+///   final quickResult = await analyzeQuick('https://github.com/user/repo');
+///
+///   // LLM-optimized analysis
+///   final llmContext = await analyzeForLLM(
+///     'https://github.com/user/repo',
+///     githubToken: 'your-github-token',
+///     maxFiles: 200,
+///   );
+/// }
+/// ```
 library;
 
 import 'dart:async';
-
 import 'package:github_analyzer/src/common/config.dart';
 import 'package:github_analyzer/src/common/logger.dart';
 import 'package:github_analyzer/src/di/service_locator.dart';
@@ -24,58 +66,74 @@ export 'src/models/source_file.dart';
 export 'src/services/context_service.dart';
 export 'src/services/markdown_service.dart';
 
-/// Analyzes a repository and returns the analysis result.
+/// Analyzes a GitHub repository and returns comprehensive analysis results.
 ///
-/// This is a convenience function that automatically handles dependency
-/// initialization, analysis execution, and resource cleanup.
+/// This is the primary function for analyzing repositories. It supports both
+/// local directories and remote GitHub repositories (public and private).
 ///
 /// ## Parameters
 ///
-/// * [repositoryUrl] - GitHub repository URL or local directory path
-/// * [config] - Optional custom configuration. If not provided, uses defaults
-/// * [progressCallback] - Optional callback to receive progress updates
-/// * [verbose] - Enable verbose logging (default: false)
-/// * [useCache] - Whether to use cached results. If null, uses config setting
+/// - [repositoryUrl]: The GitHub repository URL (e.g., 'https://github.com/user/repo')
+///   or a local directory path.
+/// - [config]: Optional analyzer configuration. If not provided, default settings
+///   will be used.
+/// - [progressCallback]: Optional callback to receive real-time progress updates
+///   during analysis.
+/// - [verbose]: Whether to enable verbose logging. Defaults to `false`.
+/// - [useCache]: Whether to use cached results if available. If `null`, uses the
+///   config's cache setting.
 ///
 /// ## Returns
 ///
-/// [AnalysisResult] containing analyzed files, statistics, and metadata.
+/// A [Future] that completes with an [AnalysisResult] containing:
+/// - Repository metadata (name, description, languages, etc.)
+/// - List of analyzed source files with content and metadata
+/// - Statistics (total files, lines, size, language breakdown)
+/// - Directory tree structure
+/// - Main entry point files
+/// - Detected dependencies
+/// - Any errors encountered during analysis
 ///
 /// ## Example
 ///
 /// ```
-/// // Analyze with default settings
-/// final result = await analyze('https://github.com/flutter/flutter');
+/// // Basic analysis with default settings
+/// final result = await analyze('https://github.com/user/repo');
+/// print('Total files: ${result.files.length}');
+/// print('Total lines: ${result.statistics.totalLines}');
 ///
-/// // Analyze with custom config
-/// final config = await GithubAnalyzerConfig.create(
-///   githubToken: 'ghp_xxxxx',
-///   maxTotalFiles: 500,
+/// // Analysis with custom configuration
+/// final customConfig = await GithubAnalyzerConfig.create(
+///   githubToken: 'your-token',
+///   maxFileSize: 500 * 1024, // 500KB
+///   enableCache: true,
 /// );
+///
 /// final result = await analyze(
-///   'https://github.com/dart-lang/sdk',
-///   config: config,
+///   'https://github.com/user/private-repo',
+///   config: customConfig,
 ///   verbose: true,
 /// );
 ///
-/// // Analyze with progress tracking
+/// // Analysis with progress tracking
 /// final result = await analyze(
-///   'https://github.com/flutter/samples',
+///   'https://github.com/user/repo',
 ///   progressCallback: (progress) {
-///     print('${progress.phase}: ${(progress.progress * 100).toInt()}%');
+///     print('${progress.phase}: ${progress.message}');
+///     print('Progress: ${(progress.progress * 100).toStringAsFixed(1)}%');
 ///   },
 /// );
 /// ```
 ///
-/// ## Resource Management
+/// ## Throws
 ///
-/// This function automatically disposes resources after analysis completes.
-/// For long-running applications with multiple analyses, consider using
-/// [GithubAnalyzer] class directly to reuse resources.
+/// - [AnalyzerException] if the repository cannot be accessed or analyzed.
+/// - [ArgumentError] if the repository URL is invalid.
 ///
 /// See also:
-/// * [analyzeQuick] for fast analysis with optimized settings
-/// * [analyzeForLLM] for LLM-optimized analysis with markdown output
+/// - [analyzeAndGenerate] for analysis with markdown generation
+/// - [analyzeQuick] for fast analysis with minimal output
+/// - [analyzeForLLM] for LLM-optimized analysis
 Future<AnalysisResult> analyze(
   String repositoryUrl, {
   GithubAnalyzerConfig? config,
@@ -88,9 +146,9 @@ Future<AnalysisResult> analyze(
   // Setup dependencies using DI container
   await setupDependencies(config: config);
 
-  final analyzer = await GithubAnalyzer.create();
-  StreamSubscription<AnalysisProgress>? progressSubscription;
+  final analyzer = await GithubAnalyzer.create(config: config);
 
+  StreamSubscription<AnalysisProgress>? progressSubscription;
   if (progressCallback != null) {
     progressSubscription = analyzer.progressStream.listen(progressCallback);
   }
@@ -103,72 +161,77 @@ Future<AnalysisResult> analyze(
   }
 }
 
-/// Analyzes a repository and generates markdown output in one step.
+/// Analyzes a repository and generates markdown documentation in one step.
 ///
-/// This convenience function performs analysis and immediately generates
-/// a markdown file suitable for AI/LLM context. Combines [analyze] and
-/// markdown generation into a single operation.
+/// This function combines repository analysis with markdown generation,
+/// providing a convenient way to produce comprehensive documentation.
 ///
 /// ## Parameters
 ///
-/// * [repositoryUrl] - GitHub repository URL or local directory path
-/// * [outputPath] - Optional specific file path for markdown output
-/// * [outputDir] - Optional directory for output (uses default filename)
-/// * [analyzerConfig] - Optional analyzer configuration
-/// * [markdownConfig] - Markdown generation settings (default: standard)
-/// * [progressCallback] - Optional callback for progress updates
-/// * [verbose] - Enable verbose logging (default: false)
-/// * [useCache] - Whether to use cached results
+/// - [repositoryUrl]: The GitHub repository URL or local directory path.
+/// - [outputPath]: Optional specific file path for the output. If not provided,
+///   the file will be saved in [outputDir] with an auto-generated name.
+/// - [outputDir]: Directory where the markdown file should be saved. Defaults to
+///   the current directory if not specified.
+/// - [analyzerConfig]: Optional analyzer configuration for customizing the
+///   analysis behavior.
+/// - [markdownConfig]: Configuration for markdown generation. Defaults to
+///   [MarkdownConfig.standard].
+/// - [progressCallback]: Optional callback for progress updates.
+/// - [verbose]: Whether to enable verbose logging. Defaults to `false`.
+/// - [useCache]: Whether to use cached results if available.
 ///
 /// ## Returns
 ///
-/// String containing the absolute path to the generated markdown file.
+/// A [Future] that completes with a [String] containing the path to the
+/// generated markdown file.
 ///
 /// ## Example
 ///
 /// ```
-/// // Generate with default settings
-/// final path = await analyzeAndGenerate(
-///   'https://github.com/flutter/flutter',
+/// // Basic usage with default settings
+/// final outputPath = await analyzeAndGenerate(
+///   'https://github.com/user/repo',
+///   outputDir: './docs',
 /// );
-/// print('Markdown saved to: $path');
+/// print('Documentation saved to: $outputPath');
 ///
-/// // Generate with custom output path
-/// final path = await analyzeAndGenerate(
-///   'https://github.com/dart-lang/sdk',
-///   outputPath: './docs/sdk_analysis.md',
-/// );
-///
-/// // Generate with custom markdown config
-/// final path = await analyzeAndGenerate(
-///   'https://github.com/flutter/samples',
-///   markdownConfig: MarkdownConfig.compact,
+/// // Custom markdown configuration
+/// final customMarkdown = MarkdownConfig(
+///   includeContent: true,
+///   maxContentLength: 500,
+///   includeStatistics: true,
+///   includeDirectoryTree: true,
 /// );
 ///
-/// // Generate with progress tracking
-/// final path = await analyzeAndGenerate(
-///   'https://github.com/dart-lang/linter',
-///   progressCallback: (progress) {
-///     print('${progress.message}');
-///   },
+/// final outputPath = await analyzeAndGenerate(
+///   'https://github.com/user/repo',
+///   outputPath: './docs/README.md',
+///   markdownConfig: customMarkdown,
+/// );
+///
+/// // With custom analyzer config
+/// final analyzerConfig = await GithubAnalyzerConfig.create(
+///   githubToken: 'your-token',
+///   maxFileSize: 1024 * 1024, // 1MB
+/// );
+///
+/// final outputPath = await analyzeAndGenerate(
+///   'https://github.com/user/private-repo',
+///   outputDir: './output',
+///   analyzerConfig: analyzerConfig,
+///   markdownConfig: customMarkdown,
 /// );
 /// ```
 ///
-/// ## Output Location
+/// ## Throws
 ///
-/// * If [outputPath] provided: Uses exact path
-/// * If [outputDir] provided: Saves to directory with auto-generated filename
-/// * If neither provided: Saves to current directory
-///
-/// ## Markdown Formats
-///
-/// * [MarkdownConfig.standard] - Full details with code samples
-/// * [MarkdownConfig.compact] - Condensed format, smaller file size
-/// * [MarkdownConfig.minimal] - Essential information only
+/// - [AnalyzerException] if analysis fails.
+/// - [FileSystemException] if the output directory cannot be accessed.
 ///
 /// See also:
-/// * [analyze] for analysis without markdown generation
-/// * [analyzeForLLM] for LLM-optimized analysis
+/// - [analyze] for analysis without markdown generation
+/// - [analyzeForLLM] for LLM-optimized markdown output
 Future<String> analyzeAndGenerate(
   String repositoryUrl, {
   String? outputPath,
@@ -184,9 +247,9 @@ Future<String> analyzeAndGenerate(
   // Setup dependencies using DI container
   await setupDependencies(config: analyzerConfig);
 
-  final analyzer = await GithubAnalyzer.create();
-  StreamSubscription<AnalysisProgress>? progressSubscription;
+  final analyzer = await GithubAnalyzer.create(config: analyzerConfig);
 
+  StreamSubscription<AnalysisProgress>? progressSubscription;
   if (progressCallback != null) {
     progressSubscription = analyzer.progressStream.listen(progressCallback);
   }
@@ -196,7 +259,6 @@ Future<String> analyzeAndGenerate(
 
     // Use context service from DI container
     final contextService = getIt<ContextService>();
-
     return await contextService.generate(
       result,
       outputPath: outputPath,
@@ -210,65 +272,64 @@ Future<String> analyzeAndGenerate(
   }
 }
 
-/// Quick analysis with optimized settings for fast results.
+/// Performs a quick analysis with optimized settings for fast results.
 ///
-/// This function uses performance-optimized settings to analyze repositories
-/// quickly. Ideal for quick inspections or when full analysis is not needed.
-///
-/// ## Optimizations
-///
-/// * Cache disabled (always fresh analysis)
-/// * Isolate pool disabled (simpler processing)
-/// * Maximum 100 files analyzed
-/// * Smaller isolate pool size (2 workers)
+/// This function uses pre-configured settings optimized for speed, making it
+/// ideal for getting quick insights into a repository without comprehensive
+/// analysis. It has reduced output and faster processing compared to the
+/// standard [analyze] function.
 ///
 /// ## Parameters
 ///
-/// * [repositoryUrl] - GitHub repository URL or local directory path
-/// * [githubToken] - Optional GitHub personal access token for private repos
-/// * [progressCallback] - Optional callback for progress updates
-/// * [useCache] - Whether to use cache (default: false for quick mode)
+/// - [repositoryUrl]: The GitHub repository URL or local directory path.
+/// - [githubToken]: Optional GitHub personal access token for accessing private
+///   repositories or increasing API rate limits.
+/// - [progressCallback]: Optional callback for progress updates.
+/// - [useCache]: Whether to use cached results if available.
 ///
 /// ## Returns
 ///
-/// [AnalysisResult] with up to 100 most important files analyzed.
+/// A [Future] that completes with an [AnalysisResult] containing basic
+/// repository information and statistics.
 ///
 /// ## Example
 ///
 /// ```
-/// // Quick public repository analysis
-/// final result = await analyzeQuick(
-///   'https://github.com/flutter/samples',
-/// );
+/// // Quick analysis of a public repository
+/// final result = await analyzeQuick('https://github.com/user/repo');
+/// print('Languages: ${result.statistics.languageDistribution.keys.join(", ")}');
 ///
-/// // Quick private repository analysis
+/// // Quick analysis of a private repository
 /// final result = await analyzeQuick(
-///   'https://github.com/myorg/private-repo',
-///   githubToken: 'ghp_xxxxx',
+///   'https://github.com/user/private-repo',
+///   githubToken: 'your-github-token',
 /// );
+/// print('Total files: ${result.files.length}');
 ///
 /// // With progress tracking
 /// final result = await analyzeQuick(
-///   'https://github.com/dart-lang/sdk',
+///   'https://github.com/user/repo',
 ///   progressCallback: (progress) {
-///     print('Phase: ${progress.phase}');
+///     print('${progress.phase}: ${(progress.progress * 100).toFixed(0)}%');
 ///   },
 /// );
 /// ```
 ///
 /// ## Performance
 ///
-/// Typically 2-5x faster than standard analysis, depending on repository size.
+/// This function is optimized for speed by:
+/// - Reducing the number of files analyzed
+/// - Limiting content depth
+/// - Using aggressive caching
+/// - Skipping detailed statistics
 ///
-/// ## Limitations
+/// ## Throws
 ///
-/// * Analyzes maximum 100 files (prioritizes important files)
-/// * No persistent caching
-/// * Less parallel processing
+/// - [AnalyzerException] if the repository cannot be accessed.
 ///
 /// See also:
-/// * [analyze] for full-featured analysis
-/// * [analyzeForLLM] for LLM-optimized analysis
+/// - [analyze] for comprehensive analysis with full options
+/// - [analyzeForLLM] for LLM-optimized output
 Future<AnalysisResult> analyzeQuick(
   String repositoryUrl, {
   String? githubToken,
@@ -278,13 +339,12 @@ Future<AnalysisResult> analyzeQuick(
   setupLogger(verbose: false);
 
   // Setup dependencies using DI container
-  await setupDependencies(
-    config: await GithubAnalyzerConfig.quick(githubToken: githubToken),
-  );
+  final config = await GithubAnalyzerConfig.quick(githubToken: githubToken);
+  await setupDependencies(config: config);
 
-  final analyzer = await GithubAnalyzer.create();
+  final analyzer = await GithubAnalyzer.create(config: config);
+
   StreamSubscription<AnalysisProgress>? progressSubscription;
-
   if (progressCallback != null) {
     progressSubscription = analyzer.progressStream.listen(progressCallback);
   }
@@ -297,100 +357,102 @@ Future<AnalysisResult> analyzeQuick(
   }
 }
 
-/// Analysis optimized for LLM context generation.
+/// Analyzes a repository and generates markdown optimized for LLM context.
 ///
-/// This function analyzes a repository with settings optimized for AI/LLM
-/// consumption and automatically generates a markdown file. It excludes
-/// test files and generated code to focus on core implementation.
+/// This function is specifically designed for generating documentation that
+/// works well with Large Language Models (LLMs). It produces structured,
+/// comprehensive markdown output with optimal formatting for AI consumption.
 ///
-/// ## LLM Optimizations
+/// ## Features
 ///
-/// * Excludes test directories and files
-/// * Excludes example code
-/// * Excludes generated files (*.g.dart, *.freezed.dart, etc.)
-/// * Prioritizes main implementation files
-/// * Configurable file limit (default: 200)
-/// * Auto-generates markdown suitable for LLM context
+/// - Optimized file selection based on importance
+/// - Structured output with clear sections
+/// - Includes repository metadata, statistics, and file contents
+/// - Respects token limits with configurable [maxFiles]
+/// - Supports both public and private repositories
 ///
 /// ## Parameters
 ///
-/// * [repositoryUrl] - GitHub repository URL or local directory path
-/// * [outputPath] - Optional specific file path for markdown output
-/// * [outputDir] - Optional directory for output
-/// * [githubToken] - GitHub personal access token (required for private repos)
-/// * [maxFiles] - Maximum number of files to analyze (default: 200)
-/// * [markdownConfig] - Markdown generation settings (default: standard)
-/// * [progressCallback] - Optional callback for progress updates
-/// * [verbose] - Enable verbose logging (default: false)
-/// * [useCache] - Whether to use cached results
+/// - [repositoryUrl]: The GitHub repository URL to analyze.
+/// - [outputPath]: Optional specific file path for the output markdown file.
+/// - [outputDir]: Directory where the markdown file should be saved.
+/// - [githubToken]: GitHub personal access token for accessing private repositories
+///   and avoiding API rate limits. Highly recommended for production use.
+/// - [maxFiles]: Maximum number of files to include in the output. Defaults to 200.
+///   Helps control the output size for LLM token limits.
+/// - [markdownConfig]: Configuration for markdown generation. Defaults to
+///   [MarkdownConfig.standard].
+/// - [progressCallback]: Optional callback for real-time progress updates.
+/// - [verbose]: Whether to enable verbose logging. Defaults to `false`.
+/// - [useCache]: Whether to use cached results if available.
 ///
 /// ## Returns
 ///
-/// String containing the absolute path to the generated markdown file.
+/// A [Future] that completes with a [String] containing the path to the
+/// generated markdown file.
 ///
 /// ## Example
 ///
 /// ```
-/// // Analyze public repository for LLM
-/// final path = await analyzeForLLM(
-///   'https://github.com/flutter/flutter',
+/// // Basic LLM-optimized analysis
+/// final outputPath = await analyzeForLLM(
+///   'https://github.com/user/repo',
+///   outputDir: './llm-context',
+/// );
+/// print('LLM context saved to: $outputPath');
+///
+/// // Analysis with GitHub token for private repos
+/// final outputPath = await analyzeForLLM(
+///   'https://github.com/user/private-repo',
+///   githubToken: 'ghp_your_github_token',
+///   outputDir: './output',
 /// );
 ///
-/// // Analyze private repository
-/// final path = await analyzeForLLM(
-///   'https://github.com/myorg/private-repo',
-///   githubToken: 'ghp_xxxxx',
-/// );
-///
-/// // Analyze with custom file limit
-/// final path = await analyzeForLLM(
-///   'https://github.com/dart-lang/sdk',
-///   maxFiles: 500,
-/// );
-///
-/// // Analyze with custom output
-/// final path = await analyzeForLLM(
-///   'https://github.com/flutter/samples',
-///   outputPath: './context/flutter_samples.md',
-///   markdownConfig: MarkdownConfig.compact,
+/// // Custom file limit and output path
+/// final outputPath = await analyzeForLLM(
+///   'https://github.com/user/large-repo',
+///   githubToken: 'your-token',
+///   maxFiles: 100,
+///   outputPath: './context/repo-summary.md',
 /// );
 ///
 /// // With progress tracking
-/// final path = await analyzeForLLM(
-///   'https://github.com/dart-lang/linter',
+/// final outputPath = await analyzeForLLM(
+///   'https://github.com/user/repo',
+///   githubToken: 'your-token',
 ///   progressCallback: (progress) {
-///     print('[${(progress.progress * 100).toInt()}%] ${progress.message}');
+///     print('[${progress.phase}] ${progress.message}');
 ///   },
 /// );
 /// ```
 ///
-/// ## Excluded Patterns
-///
-/// Automatically excludes:
-/// * `test/`, `tests/` directories
-/// * `**_test.dart` files
-/// * `example/` directory
-/// * Generated files (*.g.dart, *.freezed.dart, etc.)
-///
 /// ## Output Format
 ///
-/// Generated markdown includes:
-/// * Repository metadata and statistics
-/// * Source code with syntax highlighting
-/// * File structure and dependencies
-/// * Optimized for token efficiency
+/// The generated markdown includes:
+/// - Repository metadata (name, description, languages, stars, etc.)
+/// - Comprehensive statistics (files, lines, size, language breakdown)
+/// - Directory tree structure
+/// - Main entry point files
+/// - Dependencies
+/// - Full content of important files (up to [maxFiles])
 ///
-/// ## Use Cases
+/// ## Best Practices
 ///
-/// * Preparing repository context for ChatGPT/Claude
-/// * Code review assistance
-/// * Documentation generation
-/// * Architecture analysis
+/// - Always provide a [githubToken] for production use to avoid rate limits
+/// - Adjust [maxFiles] based on your LLM's context window size
+/// - Use caching (default) for repeated analyses of the same repository
+/// - Enable [verbose] logging during development for debugging
+///
+/// ## Throws
+///
+/// - [AnalyzerException] if the repository cannot be accessed or analyzed.
+/// - [ArgumentError] if [maxFiles] is less than 0.
+/// - [FileSystemException] if the output directory cannot be accessed.
 ///
 /// See also:
-/// * [analyze] for standard analysis
-/// * [analyzeQuick] for fast analysis
-/// * [analyzeAndGenerate] for custom markdown generation
+/// - [analyze] for basic analysis without markdown generation
+/// - [analyzeAndGenerate] for standard markdown output
+/// - [analyzeQuick] for fast, minimal analysis
 Future<String> analyzeForLLM(
   String repositoryUrl, {
   String? outputPath,
@@ -405,16 +467,16 @@ Future<String> analyzeForLLM(
   setupLogger(verbose: verbose);
 
   // Setup dependencies using DI container
-  await setupDependencies(
-    config: await GithubAnalyzerConfig.forLLM(
-      githubToken: githubToken,
-      maxFiles: maxFiles,
-    ),
+  final config = await GithubAnalyzerConfig.forLLM(
+    githubToken: githubToken,
+    maxFiles: maxFiles,
   );
 
-  final analyzer = await GithubAnalyzer.create();
-  StreamSubscription<AnalysisProgress>? progressSubscription;
+  await setupDependencies(config: config);
 
+  final analyzer = await GithubAnalyzer.create(config: config);
+
+  StreamSubscription<AnalysisProgress>? progressSubscription;
   if (progressCallback != null) {
     progressSubscription = analyzer.progressStream.listen(progressCallback);
   }
@@ -424,7 +486,6 @@ Future<String> analyzeForLLM(
 
     // Use context service from DI container
     final contextService = getIt<ContextService>();
-
     return await contextService.generate(
       result,
       outputPath: outputPath,

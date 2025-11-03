@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="github_analyzer API docs, for the Dart programming language.">
+  <title>github_analyzer - Dart API docs</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="static-assets/github.css?v1">
+  <link rel="stylesheet" href="static-assets/styles.css?v1">
+  <link rel="icon" href="static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="https://github.com/cruxhan/github_analyzer">github_analyzer package</a></li>
+  </ol>
+  <div class="self-name">github_analyzer</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+  <div id="dartdoc-main-content" class="main-content">
+      
+<section class="desc markdown">
+  <h1 id="github-analyzer">GitHub Analyzer</h1>
+<p><strong>Powerful GitHub Repository Analysis Tool for AI/LLM</strong></p>
+<p>A pure Dart package that analyzes GitHub repositories and automatically generates markdown documentation optimized for AI and LLM contexts. Accelerate code reviews, documentation, and project onboarding with AI assistance.</p>
+<p><a href="https://pub.dev/packages/github_analyzer"><img src="https://img.shields.io/pub/v/github_analyzer.svg" alt="pub package"></a>
+<a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a></p>
+<h2 id="-key-features">✨ Key Features</h2>
+<ul>
+<li>🚀 <strong>Fast &amp; Efficient</strong> - Optimized with isolate-based parallel processing</li>
+<li>📦 <strong>Dual Mode</strong> - Supports both local directories and remote GitHub repositories</li>
+<li>🎯 <strong>LLM Optimized</strong> - Generates compact context for AI models</li>
+<li>🔄 <strong>Incremental Updates</strong> - Smart caching for fast re-analysis</li>
+<li>🌐 <strong>Cross-Platform</strong> - Works on web, desktop, and mobile</li>
+<li>🔒 <strong>Private Repositories</strong> - Access private repos with GitHub tokens</li>
+<li>⚡ <strong>Cache Control</strong> - Explicitly enable/disable caching</li>
+<li>🔑 <strong>Explicit Token Management</strong> - Direct token passing for better security</li>
+</ul>
+<h2 id="-use-cases">🎯 Use Cases</h2>
+<ul>
+<li><strong>AI Code Review</strong> - Provide full project context to ChatGPT/Claude</li>
+<li><strong>Automated Documentation</strong> - Auto-analyze project structure and tech stack</li>
+<li><strong>Onboarding</strong> - Quickly share project overview with new team members</li>
+<li><strong>CI/CD Integration</strong> - Detect code changes and generate automatic reports</li>
+<li><strong>Project Comparison</strong> - Compare structure and complexity of multiple repositories</li>
+</ul>
+<h2 id="-installation">📦 Installation</h2>
+<p>Add to your <code>pubspec.yaml</code>:</p>
+<pre class="language-yaml"><code class="language-yaml">dependencies:
+  github_analyzer: ^0.1.7
+</code></pre>
+<p>Install:</p>
+<pre class="language-bash"><code class="language-bash">dart pub get
+</code></pre>
+<h2 id="-quick-start">🚀 Quick Start</h2>
+<h3 id="1-get-github-token-optional-but-recommended">1. Get GitHub Token (Optional but Recommended)</h3>
+<p><strong>Why you need a token:</strong></p>
+<ul>
+<li>✅ Access private repositories</li>
+<li>✅ Increased API rate limit (60 → 5,000 req/hr)</li>
+<li>✅ Prevent 403 errors</li>
+</ul>
+<p><strong>How to get a token:</strong></p>
+<ol>
+<li>Go to <a href="https://github.com/settings/tokens?type=beta">GitHub Settings → Tokens</a></li>
+<li>Generate fine-grained token (recommended)</li>
+<li>Set Contents: Read-only permission</li>
+<li>Copy the token</li>
+</ol>
+<h3 id="2-basic-usage-public-repository">2. Basic Usage (Public Repository)</h3>
+<pre class="language-dart"><code class="language-dart">import 'package:github_analyzer/github_analyzer.dart';
+
+void main() async {
+  // Analyze a public repository
+  final result = await analyzeQuick(
+    'https://github.com/flutter/flutter',
+  );
+
+  print('Files: ${result.statistics.totalFiles}');
+  print('Lines: ${result.statistics.totalLines}');
+  print('Language: ${result.metadata.language}');
+}
+</code></pre>
+<h3 id="3-private-repository-analysis">3. Private Repository Analysis</h3>
+<pre class="language-dart"><code class="language-dart">import 'package:github_analyzer/github_analyzer.dart';
+
+void main() async {
+  // Analyze private repository with token
+  final result = await analyzeQuick(
+    'https://github.com/your/private-repo',
+    githubToken: 'ghp_your_token_here', // Pass token explicitly
+  );
+
+  print('Files: ${result.statistics.totalFiles}');
+}
+</code></pre>
+<h3 id="4-generate-markdown-for-llm">4. Generate Markdown for LLM</h3>
+<pre class="language-dart"><code class="language-dart">import 'package:github_analyzer/github_analyzer.dart';
+
+void main() async {
+  // LLM-optimized analysis and markdown generation
+  final outputPath = await analyzeForLLM(
+    'https://github.com/your/repo',
+    githubToken: 'ghp_your_token_here', // For private repos
+    outputDir: './analysis',
+    maxFiles: 200,
+  );
+
+  print('Generated: $outputPath');
+}
+</code></pre>
+<h3 id="5-advanced-usage">5. Advanced Usage</h3>
+<pre class="language-dart"><code class="language-dart">import 'package:github_analyzer/github_analyzer.dart';
+
+void main() async {
+  // Create analyzer with custom config
+  final config = await GithubAnalyzerConfig.create(
+    githubToken: 'ghp_your_token_here', // Pass token explicitly
+    excludePatterns: ['test/', 'docs/'],
+    maxFileSize: 1024 * 1024, // 1MB
+    enableCache: true,
+  );
+
+  final analyzer = await GithubAnalyzer.create(config: config);
+
+  // Analyze remote repository (disable cache)
+  final result = await analyzer.analyzeRemote(
+    repositoryUrl: 'https://github.com/your/repo',
+    useCache: false, // Always fetch latest data
+  );
+
+  // Generate compact markdown
+  final contextService = ContextService();
+  final outputPath = await contextService.generate(
+    result,
+    outputDir: './output',
+    config: MarkdownConfig.compact,
+  );
+
+  print('Generated: $outputPath');
+
+  // Clean up resources
+  await analyzer.dispose();
+}
+</code></pre>
+<h2 id="-configuration-options">⚙️ Configuration Options</h2>
+<h3 id="quick-analysis-fast">Quick Analysis (Fast)</h3>
+<pre class="language-dart"><code class="language-dart">final config = await GithubAnalyzerConfig.quick(
+  githubToken: 'your_token', // Optional for public repos
+);
+</code></pre>
+<ul>
+<li>⚡ Fast speed</li>
+<li>📄 Max 100 files</li>
+<li>🚫 Cache disabled</li>
+<li>🚫 Isolate disabled</li>
+</ul>
+<h3 id="llm-optimized-balanced">LLM Optimized (Balanced)</h3>
+<pre class="language-dart"><code class="language-dart">final config = await GithubAnalyzerConfig.forLLM(
+  githubToken: 'your_token', // Optional for public repos
+  maxFiles: 200,
+);
+</code></pre>
+<ul>
+<li>⚖️ Balanced performance</li>
+<li>📄 Custom file count</li>
+<li>✅ Cache enabled</li>
+<li>✅ Isolate enabled</li>
+<li>🧪 Test files excluded</li>
+</ul>
+<h3 id="full-analysis-comprehensive">Full Analysis (Comprehensive)</h3>
+<pre class="language-dart"><code class="language-dart">final config = await GithubAnalyzerConfig.create(
+  githubToken: 'your_token', // Optional for public repos
+  enableCache: true,
+  enableIsolatePool: true,
+  maxConcurrentRequests: 10,
+);
+</code></pre>
+<ul>
+<li>🔍 Detailed analysis</li>
+<li>♾️ Unlimited files</li>
+<li>⚡ Maximum concurrency</li>
+<li>💾 Optimized caching</li>
+</ul>
+<h2 id="-private-repository-access">🔑 Private Repository Access</h2>
+<h3 id="fine-grained-token-recommended">Fine-grained Token (Recommended)</h3>
+<ol>
+<li><a href="https://github.com/settings/tokens?type=beta">Create token</a></li>
+<li>Repository access: Select "Only select repositories"</li>
+<li>Permissions: Contents: Read-only</li>
+<li>Copy token</li>
+</ol>
+<h3 id="classic-token">Classic Token</h3>
+<ol>
+<li><a href="https://github.com/settings/tokens">Create token</a></li>
+<li>Scopes: Check <code>repo</code></li>
+<li>Copy token</li>
+</ol>
+<h3 id="use-in-code">Use in Code</h3>
+<pre class="language-dart"><code class="language-dart">// Option 1: Pass token to convenience functions
+final result = await analyzeQuick(
+  'https://github.com/user/private-repo',
+  githubToken: 'ghp_your_token_here',
+);
+
+// Option 2: Pass token via config
+final config = await GithubAnalyzerConfig.create(
+  githubToken: 'ghp_your_token_here',
+);
+final analyzer = await GithubAnalyzer.create(config: config);
+</code></pre>
+<h3 id="secure-token-management">Secure Token Management</h3>
+<p><strong>Best practices:</strong></p>
+<pre class="language-dart"><code class="language-dart">// 1. Load from environment variables
+import 'dart:io';
+
+void main() async {
+  final token = Platform.environment['GITHUB_TOKEN'];
+  
+  final result = await analyzeQuick(
+    'https://github.com/user/repo',
+    githubToken: token,
+  );
+}
+</code></pre>
+<pre class="language-dart"><code class="language-dart">// 2. Load from secure storage (mobile/desktop)
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+Future&lt;void&gt; analyze() async {
+  final storage = FlutterSecureStorage();
+  final token = await storage.read(key: 'github_token');
+  
+  final result = await analyzeQuick(
+    'https://github.com/user/repo',
+    githubToken: token,
+  );
+}
+</code></pre>
+<h2 id="-output-formats">📤 Output Formats</h2>
+<h3 id="compact-llm-friendly">Compact (LLM Friendly)</h3>
+<pre class="language-dart"><code class="language-dart">final config = MarkdownConfig.compact;
+</code></pre>
+<ul>
+<li>Minimal formatting</li>
+<li>No statistics</li>
+<li>Token count optimized</li>
+</ul>
+<h3 id="standard-balanced">Standard (Balanced)</h3>
+<pre class="language-dart"><code class="language-dart">final config = MarkdownConfig.standard;
+</code></pre>
+<ul>
+<li>Includes statistics</li>
+<li>Code blocks</li>
+<li>Directory tree</li>
+</ul>
+<h3 id="detailed-comprehensive">Detailed (Comprehensive)</h3>
+<pre class="language-dart"><code class="language-dart">final config = MarkdownConfig.detailed;
+</code></pre>
+<ul>
+<li>Full statistics</li>
+<li>Language distribution</li>
+<li>Dependency analysis</li>
+</ul>
+<h2 id="-platform-support">🌍 Platform Support</h2>
+<table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>Local Analysis</th>
+<th>Remote Analysis</th>
+<th>Cache</th>
+<th>Isolates</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Desktop</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Mobile</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Web</td>
+<td>❌</td>
+<td>✅</td>
+<td>⚠️*</td>
+<td>❌</td>
+</tr>
+</tbody>
+</table>
+<p>*Web uses browser storage instead of file system</p>
+<h2 id="-convenience-functions">🛠️ Convenience Functions</h2>
+<pre class="language-dart"><code class="language-dart">// Quick analysis (public repo)
+final result = await analyzeQuick('https://github.com/user/repo');
+
+// Quick analysis (private repo)
+final result = await analyzeQuick(
+  'https://github.com/user/private-repo',
+  githubToken: 'your_token',
+);
+
+// LLM-optimized analysis + markdown generation
+final outputPath = await analyzeForLLM(
+  'https://github.com/user/repo',
+  githubToken: 'your_token', // Optional for public repos
+  outputDir: './output',
+  maxFiles: 100,
+);
+
+// Custom config analysis
+final result = await analyze(
+  'https://github.com/user/repo',
+  config: await GithubAnalyzerConfig.create(
+    githubToken: 'your_token',
+  ),
+  verbose: true,
+  useCache: false, // Disable cache
+);
+</code></pre>
+<h2 id="-troubleshooting">🔍 Troubleshooting</h2>
+<h3 id="403-forbidden-error">403 Forbidden Error</h3>
+<p><strong>Cause:</strong> Missing or insufficient GitHub token permissions</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>Ensure you're passing the token correctly:
+<pre class="language-dart"><code class="language-dart">final result = await analyzeQuick(
+  'https://github.com/user/repo',
+  githubToken: 'ghp_your_token_here',
+);
+</code></pre>
+</li>
+<li>Fine-grained token: Verify repository access settings</li>
+<li>Classic token: Ensure <code>repo</code> scope is enabled</li>
+<li>Test token: <code>curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user</code></li>
+</ol>
+<h3 id="404-not-found-error">404 Not Found Error</h3>
+<p><strong>Cause:</strong> Repository doesn't exist, is private without token, or wrong branch name</p>
+<p><strong>Solution:</strong></p>
+<ol>
+<li>Verify repository URL is correct</li>
+<li>Add GitHub token for private repos</li>
+<li>Check default branch name (main vs master)</li>
+</ol>
+<h3 id="rate-limit-exceeded">Rate Limit Exceeded</h3>
+<p><strong>Cause:</strong> GitHub API rate limit (60 req/hr without token)</p>
+<p><strong>Solution:</strong></p>
+<ul>
+<li>Pass GitHub token to increase limit to 5,000 req/hr:
+<pre class="language-dart"><code class="language-dart">final result = await analyzeQuick(
+  'https://github.com/user/repo',
+  githubToken: 'your_token',
+);
+</code></pre>
+</li>
+</ul>
+<h3 id="cache-not-respecting-usecache-false">Cache Not Respecting useCache: false</h3>
+<p><strong>Fixed in v0.1.5:</strong> Cache now correctly respects the <code>useCache</code> parameter.</p>
+<pre class="language-dart"><code class="language-dart">// This will NOT create cache
+final result = await analyzer.analyze(
+  'https://github.com/user/repo',
+  useCache: false,
+);
+</code></pre>
+<h2 id="-examples">📝 Examples</h2>
+<p>Check out more examples in the <code>example/</code> directory:</p>
+<ul>
+<li><code>demo.dart</code> - Comprehensive demo with performance metrics</li>
+<li>Basic usage examples</li>
+<li>Custom configuration examples</li>
+</ul>
+<h2 id="-contributing">🤝 Contributing</h2>
+<p>Contributions are always welcome! Feel free to submit Pull Requests.</p>
+<h3 id="development-setup">Development Setup</h3>
+<pre class="language-bash"><code class="language-bash"># Clone repository
+git clone https://github.com/cruxhan/github_analyzer.git
+
+# Install dependencies
+dart pub get
+
+# Run tests
+dart test
+</code></pre>
+<h2 id="-license">📄 License</h2>
+<p>MIT License - See <a href="LICENSE">LICENSE</a> file for details.</p>
+<h2 id="-links">🔗 Links</h2>
+<ul>
+<li><a href="https://pub.dev/packages/github_analyzer">pub.dev Package</a></li>
+<li><a href="https://github.com/cruxhan/github_analyzer">GitHub Repository</a></li>
+<li><a href="https://github.com/cruxhan/github_analyzer/issues">Issue Tracker</a></li>
+<li><a href="CHANGELOG.md">Changelog</a></li>
+</ul>
+<h2 id="-usage-tips">💡 Usage Tips</h2>
+<ol>
+<li><strong>Large Repositories</strong>: Limit file count with <code>maxFiles</code> parameter</li>
+<li><strong>Cache Management</strong>: Use <code>useCache: false</code> to always fetch latest data</li>
+<li><strong>Token Security</strong>: Never hardcode tokens - use environment variables or secure storage</li>
+<li><strong>Performance Optimization</strong>: Enable parallel processing with <code>enableIsolatePool: true</code></li>
+<li><strong>LLM Token Savings</strong>: Use <code>MarkdownConfig.compact</code></li>
+<li><strong>Private Repos</strong>: Always pass <code>githubToken</code> parameter explicitly</li>
+</ol>
+<h2 id="-whats-new-in-v017">🆕 What's New in v0.1.7</h2>
+<ul>
+<li>✅ <strong>Fixed:</strong> Cache now respects <code>useCache: false</code> parameter</li>
+<li>✅ <strong>Changed:</strong> Removed automatic .env loading for better security</li>
+<li>✅ <strong>Improved:</strong> Explicit token passing via parameters</li>
+<li>✅ <strong>Fixed:</strong> Private repository analysis with HTTP redirect support</li>
+</ul>
+<hr>
+<p><strong>Made with ❤️ for the Dart &amp; Flutter community</strong></p>
+<h1 id="github-analyzer-2">GitHub Analyzer</h1>
+<p><strong>AI/LLM을 위한 강력한 GitHub 저장소 분석 도구</strong></p>
+<p>GitHub 저장소를 분석하고 AI 및 LLM 컨텍스트에 최적화된 마크다운 문서를 자동 생성하는 순수 Dart 패키지입니다. 코드 리뷰, 문서화, 프로젝트 온보딩을 AI 지원으로 가속화하세요.</p>
+<p><a href="https://pub.dev/packages/github_analyzer"><img src="https://img.shields.io/pub/v/github_analyzer.svg" alt="pub package"></a>
+<a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a></p>
+<h2 id="--">✨ 주요 기능</h2>
+<ul>
+<li>🚀 <strong>빠르고 효율적</strong> - Isolate 기반 병렬 처리로 최적화</li>
+<li>📦 <strong>이중 모드</strong> - 로컬 디렉토리 및 원격 GitHub 저장소 지원</li>
+<li>🎯 <strong>LLM 최적화</strong> - AI 모델을 위한 간결한 컨텍스트 생성</li>
+<li>🔄 <strong>증분 업데이트</strong> - 빠른 재분석을 위한 스마트 캐싱</li>
+<li>🌐 <strong>크로스 플랫폼</strong> - 웹, 데스크톱, 모바일에서 작동</li>
+<li>🔒 <strong>비공개 저장소</strong> - GitHub 토큰으로 비공개 저장소 접근</li>
+<li>⚡ <strong>캐시 제어</strong> - 캐싱을 명시적으로 활성화/비활성화</li>
+<li>🔑 <strong>명시적 토큰 관리</strong> - 보안 강화를 위한 직접 토큰 전달</li>
+</ul>
+<h2 id="---2">🎯 사용 사례</h2>
+<ul>
+<li><strong>AI 코드 리뷰</strong> - ChatGPT/Claude에 전체 프로젝트 컨텍스트 제공</li>
+<li><strong>자동화된 문서</strong> - 프로젝트 구조 및 기술 스택 자동 분석</li>
+<li><strong>온보딩</strong> - 신입 팀원과 빠르게 프로젝트 개요 공유</li>
+<li><strong>CI/CD 통합</strong> - 코드 변경 감지 및 자동 리포트 생성</li>
+<li><strong>프로젝트 비교</strong> - 다양한 저장소의 구조 및 복잡성 비교</li>
+</ul>
+<h2 id="-">📦 설치</h2>
+<p><code>pubspec.yaml</code>에 추가:</p>
+<pre class="language-yaml"><code class="language-yaml">dependencies:
+  github_analyzer: ^0.1.5
+</code></pre>
+<p>설치:</p>
+<pre class="language-bash"><code class="language-bash">dart pub get
+</code></pre>
+<h2 id="---3">🚀 빠른 시작</h2>
+<h3 id="1-github----">1. GitHub 토큰 발급 (선택사항이지만 권장)</h3>
+<p><strong>토큰이 필요한 이유:</strong></p>
+<ul>
+<li>✅ 비공개 저장소 접근</li>
+<li>✅ API 속도 제한 증가 (60 → 5,000 req/hr)</li>
+<li>✅ 403 오류 방지</li>
+</ul>
+<p><strong>토큰 발급 방법:</strong></p>
+<ol>
+<li><a href="https://github.com/settings/tokens?type=beta">GitHub Settings → Tokens</a> 방문</li>
+<li>Fine-grained 토큰 생성 (권장)</li>
+<li>Contents: Read-only 권한 설정</li>
+<li>토큰 복사</li>
+</ol>
+<h3 id="2----">2. 기본 사용법 (공개 저장소)</h3>
+<pre class="language-dart"><code class="language-dart">import 'package:github_analyzer/github_analyzer.dart';
+
+void main() async {
+  // 공개 저장소 분석
+  final result = await analyzeQuick(
+    'https://github.com/flutter/flutter',
+  );
+
+  print('파일: ${result.statistics.totalFiles}');
+  print('라인: ${result.statistics.totalLines}');
+  print('언어: ${result.metadata.language}');
+}
+</code></pre>
+<h3 id="3---">3. 비공개 저장소 분석</h3>
+<pre class="language-dart"><code class="language-dart">import 'package:github_analyzer/github_analyzer.dart';
+
+void main() async {
+  // 토큰으로 비공개 저장소 분석
+  final result = await analyzeQuick(
+    'https://github.com/your/private-repo',
+    githubToken: 'ghp_your_token_here', // 토큰 명시적 전달
+  );
+
+  print('파일: ${result.statistics.totalFiles}');
+}
+</code></pre>
+<h3 id="4-llm--">4. LLM용 마크다운 생성</h3>
+<pre class="language-dart"><code class="language-dart">import 'package:github_analyzer/github_analyzer.dart';
+
+void main() async {
+  // LLM 최적화 분석 및 마크다운 생성
+  final outputPath = await analyzeForLLM(
+    'https://github.com/your/repo',
+    githubToken: 'ghp_your_token_here', // 비공개 저장소의 경우
+    outputDir: './analysis',
+    maxFiles: 200,
+  );
+
+  print('생성됨: $outputPath');
+}
+</code></pre>
+<h3 id="5--">5. 고급 사용법</h3>
+<pre class="language-dart"><code class="language-dart">import 'package:github_analyzer/github_analyzer.dart';
+
+void main() async {
+  // 사용자 정의 설정으로 분석기 생성
+  final config = await GithubAnalyzerConfig.create(
+    githubToken: 'ghp_your_token_here', // 토큰 명시적 전달
+    excludePatterns: ['test/', 'docs/'],
+    maxFileSize: 1024 * 1024, // 1MB
+    enableCache: true,
+  );
+
+  final analyzer = await GithubAnalyzer.create(config: config);
+
+  // 원격 저장소 분석 (캐시 비활성화)
+  final result = await analyzer.analyzeRemote(
+    repositoryUrl: 'https://github.com/your/repo',
+    useCache: false, // 항상 최신 데이터 가져오기
+  );
+
+  // 간결한 마크다운 생성
+  final contextService = ContextService();
+  final outputPath = await contextService.generate(
+    result,
+    outputDir: './output',
+    config: MarkdownConfig.compact,
+  );
+
+  print('생성됨: $outputPath');
+
+  // 리소스 정리
+  await analyzer.dispose();
+}
+</code></pre>
+<h2 id="---4">⚙️ 설정 옵션</h2>
+<h3 id="---5">빠른 분석 (고속)</h3>
+<pre class="language-dart"><code class="language-dart">final config = await GithubAnalyzerConfig.quick(
+  githubToken: 'your_token', // 공개 저장소는 선택사항
+);
+</code></pre>
+<ul>
+<li>⚡ 빠른 속도</li>
+<li>📄 최대 100개 파일</li>
+<li>🚫 캐시 비활성화</li>
+<li>🚫 Isolate 비활성화</li>
+</ul>
+<h3 id="llm--">LLM 최적화 (균형)</h3>
+<pre class="language-dart"><code class="language-dart">final config = await GithubAnalyzerConfig.forLLM(
+  githubToken: 'your_token', // 공개 저장소는 선택사항
+  maxFiles: 200,
+);
+</code></pre>
+<ul>
+<li>⚖️ 균형잡힌 성능</li>
+<li>📄 사용자 정의 파일 수</li>
+<li>✅ 캐시 활성화</li>
+<li>✅ Isolate 활성화</li>
+<li>🧪 테스트 파일 제외</li>
+</ul>
+<h3 id="---6">전체 분석 (종합)</h3>
+<pre class="language-dart"><code class="language-dart">final config = await GithubAnalyzerConfig.create(
+  githubToken: 'your_token', // 공개 저장소는 선택사항
+  enableCache: true,
+  enableIsolatePool: true,
+  maxConcurrentRequests: 10,
+);
+</code></pre>
+<ul>
+<li>🔍 상세 분석</li>
+<li>♾️ 무제한 파일</li>
+<li>⚡ 최대 동시성</li>
+<li>💾 최적화된 캐싱</li>
+</ul>
+<h2 id="---">🔑 비공개 저장소 접근</h2>
+<h3 id="fine-grained--">Fine-grained 토큰 (권장)</h3>
+<ol>
+<li><a href="https://github.com/settings/tokens?type=beta">토큰 생성</a></li>
+<li>Repository access: "Only select repositories" 선택</li>
+<li>Permissions: Contents: Read-only 설정</li>
+<li>토큰 복사</li>
+</ol>
+<h3 id="--2">클래식 토큰</h3>
+<ol>
+<li><a href="https://github.com/settings/tokens">토큰 생성</a></li>
+<li>Scopes: <code>repo</code> 체크</li>
+<li>토큰 복사</li>
+</ol>
+<h3 id="--3">코드에서 사용</h3>
+<pre class="language-dart"><code class="language-dart">// 옵션 1: 편의 함수에 토큰 전달
+final result = await analyzeQuick(
+  'https://github.com/user/private-repo',
+  githubToken: 'ghp_your_token_here',
+);
+
+// 옵션 2: 설정을 통해 토큰 전달
+final config = await GithubAnalyzerConfig.create(
+  githubToken: 'ghp_your_token_here',
+);
+final analyzer = await GithubAnalyzer.create(config: config);
+</code></pre>
+<h3 id="---7">토큰 안전 관리</h3>
+<p><strong>모범 사례:</strong></p>
+<pre class="language-dart"><code class="language-dart">// 1. 환경 변수에서 로드
+import 'dart:io';
+
+void main() async {
+  final token = Platform.environment['GITHUB_TOKEN'];
+  
+  final result = await analyzeQuick(
+    'https://github.com/user/repo',
+    githubToken: token,
+  );
+}
+</code></pre>
+<pre class="language-dart"><code class="language-dart">// 2. 보안 저장소에서 로드 (모바일/데스크톱)
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+Future&lt;void&gt; analyze() async {
+  final storage = FlutterSecureStorage();
+  final token = await storage.read(key: 'github_token');
+  
+  final result = await analyzeQuick(
+    'https://github.com/user/repo',
+    githubToken: token,
+  );
+}
+</code></pre>
+<h2 id="---8">📤 출력 형식</h2>
+<h3 id="--llm-">간결한 형식 (LLM 친화적)</h3>
+<pre class="language-dart"><code class="language-dart">final config = MarkdownConfig.compact;
+</code></pre>
+<ul>
+<li>최소 포맷팅</li>
+<li>통계 없음</li>
+<li>토큰 수 최적화</li>
+</ul>
+<h3 id="---9">표준 형식 (균형)</h3>
+<pre class="language-dart"><code class="language-dart">final config = MarkdownConfig.standard;
+</code></pre>
+<ul>
+<li>통계 포함</li>
+<li>코드 블록</li>
+<li>디렉토리 트리</li>
+</ul>
+<h3 id="---10">상세 형식 (종합)</h3>
+<pre class="language-dart"><code class="language-dart">final config = MarkdownConfig.detailed;
+</code></pre>
+<ul>
+<li>전체 통계</li>
+<li>언어 분포</li>
+<li>의존성 분석</li>
+</ul>
+<h2 id="---11">🌍 플랫폼 지원</h2>
+<table>
+<thead>
+<tr>
+<th>플랫폼</th>
+<th>로컬 분석</th>
+<th>원격 분석</th>
+<th>캐시</th>
+<th>Isolates</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>데스크톱</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>모바일</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>웹</td>
+<td>❌</td>
+<td>✅</td>
+<td>⚠️*</td>
+<td>❌</td>
+</tr>
+</tbody>
+</table>
+<p>*웹은 브라우저 저장소 사용</p>
+<h2 id="---12">🛠️ 편의 함수</h2>
+<pre class="language-dart"><code class="language-dart">// 빠른 분석 (공개 저장소)
+final result = await analyzeQuick('https://github.com/user/repo');
+
+// 빠른 분석 (비공개 저장소)
+final result = await analyzeQuick(
+  'https://github.com/user/private-repo',
+  githubToken: 'your_token',
+);
+
+// LLM 최적화 분석 + 마크다운 생성
+final outputPath = await analyzeForLLM(
+  'https://github.com/user/repo',
+  githubToken: 'your_token', // 공개 저장소는 선택사항
+  outputDir: './output',
+  maxFiles: 100,
+);
+
+// 사용자 정의 설정 분석
+final result = await analyze(
+  'https://github.com/user/repo',
+  config: await GithubAnalyzerConfig.create(
+    githubToken: 'your_token',
+  ),
+  verbose: true,
+  useCache: false, // 캐시 비활성화
+);
+</code></pre>
+<h2 id="---13">🔍 문제 해결</h2>
+<h3 id="403-forbidden-">403 Forbidden 오류</h3>
+<p><strong>원인:</strong> 누락되었거나 불충분한 GitHub 토큰 권한</p>
+<p><strong>해결책:</strong></p>
+<ol>
+<li>토큰을 올바르게 전달하는지 확인:
+<pre class="language-dart"><code class="language-dart">final result = await analyzeQuick(
+  'https://github.com/user/repo',
+  githubToken: 'ghp_your_token_here',
+);
+</code></pre>
+</li>
+<li>Fine-grained 토큰: 저장소 접근 설정 확인</li>
+<li>클래식 토큰: <code>repo</code> 범위 활성화 확인</li>
+<li>토큰 테스트: <code>curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user</code></li>
+</ol>
+<h3 id="404-not-found-">404 Not Found 오류</h3>
+<p><strong>원인:</strong> 저장소가 없음, 토큰 없이 비공개 저장소 접근, 잘못된 브랜치명</p>
+<p><strong>해결책:</strong></p>
+<ol>
+<li>저장소 URL 정확성 확인</li>
+<li>비공개 저장소에 GitHub 토큰 추가</li>
+<li>기본 브랜치명 확인 (main vs master)</li>
+</ol>
+<h3 id="rate-limit-">Rate Limit 초과</h3>
+<p><strong>원인:</strong> GitHub API 속도 제한 (토큰 없음: 60 req/hr)</p>
+<p><strong>해결책:</strong></p>
+<ul>
+<li>GitHub 토큰을 전달하여 한도 증가 (5,000 req/hr):
+<pre class="language-dart"><code class="language-dart">final result = await analyzeQuick(
+  'https://github.com/user/repo',
+  githubToken: 'your_token',
+);
+</code></pre>
+</li>
+</ul>
+<h3 id="usecache-false--">useCache: false를 무시하는 캐시</h3>
+<p><strong>v0.1.5에서 수정됨:</strong> 캐시가 <code>useCache</code> 파라미터를 올바르게 인식합니다.</p>
+<pre class="language-dart"><code class="language-dart">// 이제 캐시를 생성하지 않습니다
+final result = await analyzer.analyze(
+  'https://github.com/user/repo',
+  useCache: false,
+);
+</code></pre>
+<h2 id="--4">📝 예제</h2>
+<p><code>example/</code> 디렉토리에서 더 많은 예제를 확인하세요:</p>
+<ul>
+<li><code>demo.dart</code> - 성능 메트릭스를 포함한 종합 데모</li>
+<li>기본 사용 예제</li>
+<li>사용자 정의 설정 예제</li>
+</ul>
+<h2 id="--5">🤝 기여하기</h2>
+<p>기여는 항상 환영합니다! Pull Request를 자유롭게 제출하세요.</p>
+<h3 id="---14">개발 환경 설정</h3>
+<pre class="language-bash"><code class="language-bash"># 저장소 복제
+git clone https://github.com/cruxhan/github_analyzer.git
+
+# 의존성 설치
+dart pub get
+
+# 테스트 실행
+dart test
+</code></pre>
+<h2 id="--6">📄 라이선스</h2>
+<p>MIT License - 자세한 내용은 <a href="LICENSE">LICENSE</a> 파일 참조</p>
+<h2 id="--7">🔗 링크</h2>
+<ul>
+<li><a href="https://pub.dev/packages/github_analyzer">pub.dev 패키지</a></li>
+<li><a href="https://github.com/cruxhan/github_analyzer">GitHub 저장소</a></li>
+<li><a href="https://github.com/cruxhan/github_analyzer/issues">이슈 추적</a></li>
+<li><a href="CHANGELOG.md">변경 로그</a></li>
+</ul>
+<h2 id="---15">💡 사용 팁</h2>
+<ol>
+<li><strong>대규모 저장소</strong>: <code>maxFiles</code> 파라미터로 파일 수 제한</li>
+<li><strong>캐시 관리</strong>: 최신 데이터를 위해 <code>useCache: false</code> 사용</li>
+<li><strong>토큰 보안</strong>: 환경 변수 또는 보안 저장소 사용</li>
+<li><strong>성능 최적화</strong>: <code>enableIsolatePool: true</code>로 병렬 처리 활성화</li>
+<li><strong>LLM 토큰 절약</strong>: <code>MarkdownConfig.compact</code> 사용</li>
+<li><strong>비공개 저장소</strong>: 항상 <code>githubToken</code> 파라미터 명시적 전달</li>
+</ol>
+<h2 id="-v015--">🆕 v0.1.5의 새 기능</h2>
+<ul>
+<li>✅ <strong>수정됨:</strong> <code>useCache: false</code> 파라미터 캐시 존중</li>
+<li>✅ <strong>변경됨:</strong> 보안 강화를 위해 자동 .env 로드 제거</li>
+<li>✅ <strong>개선됨:</strong> 파라미터를 통한 명시적 토큰 전달</li>
+<li>✅ <strong>수정됨:</strong> HTTP 리다이렉트 지원 추가</li>
+</ul>
+<hr>
+<p><strong>Dart &amp; Flutter 커뮤니티를 위해 ❤️ 으로 만들어졌습니다</strong></p>
+</section>
+
+
+      <section class="summary">
+          <h2>Libraries</h2>
+        <dl>
+          <dt id="github_analyzer">
+  <span class="name"><a href="github_analyzer/">github_analyzer</a></span> 
+
+</dt>
+<dd>A Dart package for analyzing GitHub repositories and generating comprehensive documentation.
+</dd>
+
+        </dl>
+      </section>
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li><a href="https://github.com/cruxhan/github_analyzer">github_analyzer package</a></li>
+</ol>
+
+    <h5 class="hidden-xs"><span class="package-name">github_analyzer</span> <span class="package-kind">package</span></h5>
+    <ol>
+      <li class="section-title">Libraries</li>
+      <li><a href="github_analyzer/">github_analyzer</a></li>
+</ol>
+
+  </div>
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+  </div>
+</main>
+<footer>
+  <span class="no-break">
+    github_analyzer
+      0.1.7
+  </span>
+  
+</footer>
+
+
+<script src="static-assets/highlight.pack.js?v1"></script>
+<script src="static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+

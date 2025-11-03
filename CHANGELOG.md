@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.7] - 2025-11-04
+- **Added**
+
+Added detailed DartDoc comments for all public API functions and main entrypoints to improve documentation quality and developer experience.
+
+Enhanced dependency injection mechanism to properly propagate GitHub token across services, preventing token loss during analysis.
+
+Improved error handling and logging during repository download and analysis phases.
+
+Supported better markdown generation options for LLM-optimized outputs.
+
+Added progress tracking callbacks to all analysis entry points for real-time status updates.
+
+- **Fixed**
+
+Fixed issue where GitHub token was not passed correctly leading to failed private repository downloads.
+
+Resolved rare race condition during cache initialization that could cause stale data usage.
+
+Fixed several null pointer exceptions in remote analysis code paths.
+
+Addressed 404 errors on unexpected branch names with clearer error messages.
+
 ## [0.1.6] - 2025-11-03
 
 ### 🔥 Breaking Changes

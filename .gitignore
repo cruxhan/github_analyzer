@@ -50,5 +50,4 @@ pubspec.lock
 *.env
 *.cfs
 output/
-demo.dart
 test.dart

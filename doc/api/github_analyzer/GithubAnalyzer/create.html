@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="API docs for the create method from the GithubAnalyzer class, for the Dart programming language.">
+  <title>create method - GithubAnalyzer class - github_analyzer library - Dart API</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../../static-assets/github.css?v1">
+  <link rel="stylesheet" href="../../static-assets/styles.css?v1">
+  <link rel="icon" href="../../static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="../../" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="../../index.html">github_analyzer</a></li>
+    <li><a href="../../github_analyzer/">github_analyzer.dart</a></li>
+    <li><a href="../../github_analyzer/GithubAnalyzer-class.html">GithubAnalyzer</a></li>
+    <li class="self-crumb">create static method</li>
+  </ol>
+  <div class="self-name">create</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+<div
+    id="dartdoc-main-content"
+    class="main-content"
+    data-above-sidebar="github_analyzer&#47;GithubAnalyzer-class-sidebar.html"
+    data-below-sidebar="">
+    <div>
+<h1><span class="kind-method">create</span> static method 
+</h1></div>
+
+    <section class="multi-line-signature">
+      
+<span class="returntype"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="../../github_analyzer/GithubAnalyzer-class.html">GithubAnalyzer</a></span>&gt;</span></span>
+<span class="name ">create</span>(<wbr>{<ol class="parameter-list"> <li><span class="parameter" id="create-param-config"><span class="type-annotation"><a href="../../github_analyzer/GithubAnalyzerConfig-class.html">GithubAnalyzerConfig</a>?</span> <span class="parameter-name">config</span>, </span></li>
+</ol>})
+
+      
+
+    </section>
+    
+<section class="desc markdown">
+  <p>Factory method to create a <a href="../../github_analyzer/GithubAnalyzer-class.html">GithubAnalyzer</a> with automatic dependency setup.</p>
+<p>This is the recommended way to create a <a href="../../github_analyzer/GithubAnalyzer-class.html">GithubAnalyzer</a> instance. It
+automatically initializes all required dependencies including HTTP client,
+API provider, cache service, and isolate pool based on configuration.</p>
+<h2 id="parameters">Parameters</h2>
+<ul>
+<li><code>config</code> - Optional custom configuration. If not provided, creates
+default config with standard settings.</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<p>Fully initialized <a href="../../github_analyzer/GithubAnalyzer-class.html">GithubAnalyzer</a> instance ready for use.</p>
+<h2 id="example">Example</h2>
+<pre class="language-dart"><code>// With default configuration
+final analyzer = await GithubAnalyzer.create();
+
+// With custom configuration (provide token explicitly)
+final customConfig = await GithubAnalyzerConfig.create(
+  githubToken: 'ghp_xxxxx',
+  maxTotalFiles: 500,
+  enableCache: true,
+);
+final analyzer = await GithubAnalyzer.create(config: customConfig);
+</code></pre>
+<h2 id="initialization-process">Initialization Process</h2>
+<ol>
+<li>Creates HTTP client manager with retry logic</li>
+<li>Initializes GitHub API provider with authentication</li>
+<li>Sets up ZIP downloader for repository archives</li>
+<li>Configures cache service (if enabled)</li>
+<li>Initializes isolate pool for parallel processing (if enabled)</li>
+<li>Creates analyzer services for local and remote analysis</li>
+</ol>
+</section>
+
+
+    
+<section class="summary source-code" id="source">
+  <h2><span>Implementation</span></h2>
+  <pre class="language-dart"><code class="language-dart">static Future&lt;GithubAnalyzer&gt; create({GithubAnalyzerConfig? config}) async {
+  final effectiveConfig = config ?? await GithubAnalyzerConfig.create();
+
+  &#47;&#47; Create HTTP client manager with configured timeouts and retry logic
+  final httpClientManager = HttpClientManager(
+    requestTimeout: const Duration(seconds: 30),
+    maxConcurrentRequests: effectiveConfig.maxConcurrentRequests,
+    maxRetries: effectiveConfig.maxRetries,
+  );
+
+  &#47;&#47; Create API provider with GitHub authentication
+  final apiProvider = GithubApiProvider(
+    httpClientManager: httpClientManager,
+    token: effectiveConfig.githubToken,
+  );
+
+  &#47;&#47; Create ZIP downloader for fetching repository archives
+  final zipDownloader = ZipDownloader(httpClientManager: httpClientManager);
+
+  &#47;&#47; Create cache service if caching is enabled
+  CacheService? cacheService;
+  if (effectiveConfig.enableCache) {
+    cacheService = CacheService(
+      cacheDirectory: effectiveConfig.cacheDirectory,
+      maxAge: effectiveConfig.cacheDuration,
+    );
+    await cacheService.initialize();
+  }
+
+  &#47;&#47; Create isolate pool for parallel processing if enabled
+  IsolatePool? isolatePool;
+  if (effectiveConfig.enableIsolatePool) {
+    isolatePool = IsolatePool(size: effectiveConfig.isolatePoolSize);
+    await isolatePool.initialize();
+  }
+
+  &#47;&#47; Create repository analyzer with optional isolate pool
+  final repositoryAnalyzer = RepositoryAnalyzer(
+    config: effectiveConfig,
+    isolatePool: isolatePool,
+  );
+
+  &#47;&#47; Create local analyzer service for directory analysis
+  final localAnalyzer = LocalAnalyzerService(
+    config: effectiveConfig,
+    repositoryAnalyzer: repositoryAnalyzer,
+  );
+
+  &#47;&#47; Create remote analyzer service for GitHub repositories
+  final remoteAnalyzer = RemoteAnalyzerService(
+    config: effectiveConfig,
+    apiProvider: apiProvider,
+    zipDownloader: zipDownloader,
+    cacheService: cacheService,
+  );
+
+  return GithubAnalyzer(
+    config: effectiveConfig,
+    httpClientManager: httpClientManager,
+    apiProvider: apiProvider,
+    zipDownloader: zipDownloader,
+    localAnalyzer: localAnalyzer,
+    remoteAnalyzer: remoteAnalyzer,
+    cacheService: cacheService,
+    isolatePool: isolatePool,
+  );
+}</code></pre>
+</section>
+
+
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li><a href="../../index.html">github_analyzer</a></li>
+    <li><a href="../../github_analyzer/">github_analyzer</a></li>
+    <li><a href="../../github_analyzer/GithubAnalyzer-class.html">GithubAnalyzer</a></li>
+    <li class="self-crumb">create static method</li>
+</ol>
+
+    <h5>GithubAnalyzer class</h5>
+    <div id="dartdoc-sidebar-left-content"></div>
+  </div><!--/.sidebar-offcanvas-->
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+</div><!--/.sidebar-offcanvas-->
+</main>
+<footer>
+  <span class="no-break">
+    github_analyzer
+      0.1.7
+  </span>
+  
+</footer>
+
+
+<script src="../../static-assets/highlight.pack.js?v1"></script>
+<script src="../../static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+

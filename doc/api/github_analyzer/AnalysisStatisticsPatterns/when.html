@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="API docs for the when method from the AnalysisStatisticsPatterns extension, for the Dart programming language.">
+  <title>when method - AnalysisStatisticsPatterns extension - github_analyzer library - Dart API</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../../static-assets/github.css?v1">
+  <link rel="stylesheet" href="../../static-assets/styles.css?v1">
+  <link rel="icon" href="../../static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="../../" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="../../index.html">github_analyzer</a></li>
+    <li><a href="../../github_analyzer/">github_analyzer.dart</a></li>
+    <li><a href="../../github_analyzer/AnalysisStatisticsPatterns.html">AnalysisStatisticsPatterns</a></li>
+    <li class="self-crumb">when&lt;<wbr><span class="type-parameter">TResult extends Object?</span>&gt; method</li>
+  </ol>
+  <div class="self-name">when</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+<div
+    id="dartdoc-main-content"
+    class="main-content"
+    data-above-sidebar="github_analyzer&#47;AnalysisStatisticsPatterns-extension-sidebar.html"
+    data-below-sidebar="">
+    <div>
+<h1><span class="kind-method">when&lt;<wbr><span class="type-parameter">TResult extends Object?</span>&gt;</span> method 
+</h1></div>
+
+    <section class="multi-line-signature">
+      
+  <div>
+    <ol class="annotation-list">
+        <li>@<a href="https://pub.dev/documentation/meta/1.17.0/meta/optionalTypeArgs-constant.html">optionalTypeArgs</a></li>
+    </ol>
+  </div>
+<span class="returntype">TResult</span>
+<span class="name ">when</span>&lt;<wbr><span class="type-parameter">TResult extends Object?</span>&gt;(<wbr><ol class="parameter-list single-line"> <li><span class="parameter" id="when-param-$default"><span class="type-annotation">TResult</span> <span class="parameter-name">$default</span>(<ol class="parameter-list"> <li><span class="parameter" id="param-totalFiles"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/int-class.html">int</a></span> <span class="parameter-name">totalFiles</span>, </span></li>
+<li><span class="parameter" id="param-totalLines"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/int-class.html">int</a></span> <span class="parameter-name">totalLines</span>, </span></li>
+<li><span class="parameter" id="param-totalSize"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/int-class.html">int</a></span> <span class="parameter-name">totalSize</span>, </span></li>
+<li><span class="parameter" id="param-languageDistribution"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Map-class.html">Map</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span>, <span class="type-parameter"><a href="https://api.dart.dev/stable/3.9.2/dart-core/int-class.html">int</a></span>&gt;</span></span> <span class="parameter-name">languageDistribution</span>, </span></li>
+<li><span class="parameter" id="param-binaryFiles"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/int-class.html">int</a></span> <span class="parameter-name">binaryFiles</span>, </span></li>
+<li><span class="parameter" id="param-sourceFiles"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/int-class.html">int</a></span> <span class="parameter-name">sourceFiles</span>, </span></li>
+<li><span class="parameter" id="param-configFiles"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/int-class.html">int</a></span> <span class="parameter-name">configFiles</span>, </span></li>
+<li><span class="parameter" id="param-documentationFiles"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/int-class.html">int</a></span> <span class="parameter-name">documentationFiles</span>, </span></li>
+</ol>)</span></li>
+</ol>)
+
+      
+
+    </section>
+    
+<section class="desc markdown">
+  <p>A <code>switch</code>-like method, using callbacks.</p>
+<p>As opposed to <code>map</code>, this offers destructuring.
+It is equivalent to doing:</p>
+<pre class="language-dart"><code class="language-dart">switch (sealedClass) {
+  case Subclass(:final field):
+    return ...;
+  case Subclass2(:final field2):
+    return ...;
+}
+</code></pre>
+</section>
+
+
+    
+<section class="summary source-code" id="source">
+  <h2><span>Implementation</span></h2>
+  <pre class="language-dart"><code class="language-dart">@optionalTypeArgs TResult when&lt;TResult extends Object?&gt;(TResult Function( int totalFiles,  int totalLines,  int totalSize,  Map&lt;String, int&gt; languageDistribution,  int binaryFiles,  int sourceFiles,  int configFiles,  int documentationFiles)  $default,) {final _that = this;
+switch (_that) {
+case _AnalysisStatistics():
+return $default(_that.totalFiles,_that.totalLines,_that.totalSize,_that.languageDistribution,_that.binaryFiles,_that.sourceFiles,_that.configFiles,_that.documentationFiles);case _:
+  throw StateError(&#39;Unexpected subclass&#39;);
+
+}
+}</code></pre>
+</section>
+
+
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li><a href="../../index.html">github_analyzer</a></li>
+    <li><a href="../../github_analyzer/">github_analyzer</a></li>
+    <li><a href="../../github_analyzer/AnalysisStatisticsPatterns.html">AnalysisStatisticsPatterns</a></li>
+    <li class="self-crumb">when&lt;<wbr><span class="type-parameter">TResult extends Object?</span>&gt; method</li>
+</ol>
+
+    <h5>AnalysisStatisticsPatterns extension on <a href="../../github_analyzer/AnalysisStatistics-class.html">AnalysisStatistics</a></h5>
+    <div id="dartdoc-sidebar-left-content"></div>
+  </div><!--/.sidebar-offcanvas-->
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+</div><!--/.sidebar-offcanvas-->
+</main>
+<footer>
+  <span class="no-break">
+    github_analyzer
+      0.1.7
+  </span>
+  
+</footer>
+
+
+<script src="../../static-assets/highlight.pack.js?v1"></script>
+<script src="../../static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="API docs for the analyzeAndGenerate function from the github_analyzer library, for the Dart programming language.">
+  <title>analyzeAndGenerate function - github_analyzer library - Dart API</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../static-assets/github.css?v1">
+  <link rel="stylesheet" href="../static-assets/styles.css?v1">
+  <link rel="icon" href="../static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="../" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="../index.html">github_analyzer</a></li>
+    <li><a href="../github_analyzer/">github_analyzer.dart</a></li>
+    <li class="self-crumb">analyzeAndGenerate function</li>
+  </ol>
+  <div class="self-name">analyzeAndGenerate</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+  <div
+      id="dartdoc-main-content"
+      class="main-content"
+      data-above-sidebar="github_analyzer&#47;github_analyzer-library-sidebar.html"
+      data-below-sidebar="">
+      <div>
+<h1><span class="kind-function">analyzeAndGenerate</span> function 
+ 
+</h1></div>
+
+    <section class="multi-line-signature">
+        
+<span class="returntype"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span>&gt;</span></span>
+<span class="name ">analyzeAndGenerate</span>(<wbr><ol class="parameter-list"> <li><span class="parameter" id="analyzeAndGenerate-param-repositoryUrl"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span> <span class="parameter-name">repositoryUrl</span>, {</span></li>
+<li><span class="parameter" id="analyzeAndGenerate-param-outputPath"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a>?</span> <span class="parameter-name">outputPath</span>, </span></li>
+<li><span class="parameter" id="analyzeAndGenerate-param-outputDir"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a>?</span> <span class="parameter-name">outputDir</span>, </span></li>
+<li><span class="parameter" id="analyzeAndGenerate-param-analyzerConfig"><span class="type-annotation"><a href="../github_analyzer/GithubAnalyzerConfig-class.html">GithubAnalyzerConfig</a>?</span> <span class="parameter-name">analyzerConfig</span>, </span></li>
+<li><span class="parameter" id="analyzeAndGenerate-param-markdownConfig"><span class="type-annotation"><a href="../github_analyzer/MarkdownConfig-class.html">MarkdownConfig</a></span> <span class="parameter-name">markdownConfig</span> = <span class="default-value">MarkdownConfig.standard</span>, </span></li>
+<li><span class="parameter" id="analyzeAndGenerate-param-progressCallback"><span class="type-annotation">void</span> <span class="parameter-name">progressCallback</span>(<ol class="parameter-list single-line"> <li><span class="parameter" id="param-"><span class="type-annotation"><a href="../github_analyzer/AnalysisProgress-class.html">AnalysisProgress</a></span></span></li>
+</ol>)?, </span></li>
+<li><span class="parameter" id="analyzeAndGenerate-param-verbose"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span> <span class="parameter-name">verbose</span> = <span class="default-value">false</span>, </span></li>
+<li><span class="parameter" id="analyzeAndGenerate-param-useCache"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a>?</span> <span class="parameter-name">useCache</span>, </span></li>
+</ol>})
+
+        
+
+    </section>
+    
+<section class="desc markdown">
+  <p>Analyzes a repository and generates markdown documentation in one step.</p>
+<p>This function combines repository analysis with markdown generation,
+providing a convenient way to produce comprehensive documentation.</p>
+<h2 id="parameters">Parameters</h2>
+<ul>
+<li><code>repositoryUrl</code>: The GitHub repository URL or local directory path.</li>
+<li><code>outputPath</code>: Optional specific file path for the output. If not provided,
+the file will be saved in <code>outputDir</code> with an auto-generated name.</li>
+<li><code>outputDir</code>: Directory where the markdown file should be saved. Defaults to
+the current directory if not specified.</li>
+<li><code>analyzerConfig</code>: Optional analyzer configuration for customizing the
+analysis behavior.</li>
+<li><code>markdownConfig</code>: Configuration for markdown generation. Defaults to
+<a href="../github_analyzer/MarkdownConfig/standard-constant.html">MarkdownConfig.standard</a>.</li>
+<li><code>progressCallback</code>: Optional callback for progress updates.</li>
+<li><code>verbose</code>: Whether to enable verbose logging. Defaults to <code>false</code>.</li>
+<li><code>useCache</code>: Whether to use cached results if available.</li>
+</ul>
+<h2 id="returns">Returns</h2>
+<p>A <a href="https://api.dart.dev/stable/3.9.2/dart-core/Future-class.html">Future</a> that completes with a <a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a> containing the path to the
+generated markdown file.</p>
+<h2 id="example">Example</h2>
+<pre class="language-dart"><code>// Basic usage with default settings
+final outputPath = await analyzeAndGenerate(
+  'https://github.com/user/repo',
+  outputDir: './docs',
+);
+print('Documentation saved to: $outputPath');
+
+// Custom markdown configuration
+final customMarkdown = MarkdownConfig(
+  includeContent: true,
+  maxContentLength: 500,
+  includeStatistics: true,
+  includeDirectoryTree: true,
+);
+
+final outputPath = await analyzeAndGenerate(
+  'https://github.com/user/repo',
+  outputPath: './docs/README.md',
+  markdownConfig: customMarkdown,
+);
+
+// With custom analyzer config
+final analyzerConfig = await GithubAnalyzerConfig.create(
+  githubToken: 'your-token',
+  maxFileSize: 1024 * 1024, // 1MB
+);
+
+final outputPath = await analyzeAndGenerate(
+  'https://github.com/user/private-repo',
+  outputDir: './output',
+  analyzerConfig: analyzerConfig,
+  markdownConfig: customMarkdown,
+);
+</code></pre>
+<h2 id="throws">Throws</h2>
+<ul>
+<li><a href="../github_analyzer/AnalyzerException-class.html">AnalyzerException</a> if analysis fails.</li>
+<li><code>FileSystemException</code> if the output directory cannot be accessed.</li>
+</ul>
+<p>See also:</p>
+<ul>
+<li><a href="../github_analyzer/analyze.html">analyze</a> for analysis without markdown generation</li>
+<li><a href="../github_analyzer/analyzeForLLM.html">analyzeForLLM</a> for LLM-optimized markdown output</li>
+</ul>
+</section>
+
+
+    
+<section class="summary source-code" id="source">
+  <h2><span>Implementation</span></h2>
+  <pre class="language-dart"><code class="language-dart">Future&lt;String&gt; analyzeAndGenerate(
+  String repositoryUrl, {
+  String? outputPath,
+  String? outputDir,
+  GithubAnalyzerConfig? analyzerConfig,
+  MarkdownConfig markdownConfig = MarkdownConfig.standard,
+  void Function(AnalysisProgress)? progressCallback,
+  bool verbose = false,
+  bool? useCache,
+}) async {
+  setupLogger(verbose: verbose);
+
+  &#47;&#47; Setup dependencies using DI container
+  await setupDependencies(config: analyzerConfig);
+
+  final analyzer = await GithubAnalyzer.create(config: analyzerConfig);
+
+  StreamSubscription&lt;AnalysisProgress&gt;? progressSubscription;
+  if (progressCallback != null) {
+    progressSubscription = analyzer.progressStream.listen(progressCallback);
+  }
+
+  try {
+    final result = await analyzer.analyze(repositoryUrl, useCache: useCache);
+
+    &#47;&#47; Use context service from DI container
+    final contextService = getIt&lt;ContextService&gt;();
+    return await contextService.generate(
+      result,
+      outputPath: outputPath,
+      outputDir: outputDir,
+      config: markdownConfig,
+    );
+  } finally {
+    await progressSubscription?.cancel();
+    await analyzer.dispose();
+    await disposeDependencies();
+  }
+}</code></pre>
+</section>
+
+
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li><a href="../index.html">github_analyzer</a></li>
+    <li><a href="../github_analyzer/">github_analyzer</a></li>
+    <li class="self-crumb">analyzeAndGenerate function</li>
+</ol>
+
+    <h5>github_analyzer library</h5>
+    <div id="dartdoc-sidebar-left-content"></div>
+  </div><!--/.sidebar-offcanvas-left-->
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+  </div><!--/.sidebar-offcanvas-->
+</main>
+<footer>
+  <span class="no-break">
+    github_analyzer
+      0.1.7
+  </span>
+  
+</footer>
+
+
+<script src="../static-assets/highlight.pack.js?v1"></script>
+<script src="../static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+

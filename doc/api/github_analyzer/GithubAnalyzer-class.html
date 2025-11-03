@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=no">
+  <meta name="description" content="API docs for the GithubAnalyzer class from the github_analyzer library, for the Dart programming language.">
+  <title>GithubAnalyzer class - github_analyzer library - Dart API</title>
+
+
+  
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../static-assets/github.css?v1">
+  <link rel="stylesheet" href="../static-assets/styles.css?v1">
+  <link rel="icon" href="../static-assets/favicon.png?v1">
+  
+</head>
+
+<body data-base-href="../" data-using-base-href="false" class="light-theme">
+<div id="overlay-under-drawer"></div>
+<header id="title">
+  <span id="sidenav-left-toggle" class="material-symbols-outlined" role="button" tabindex="0">menu</span>
+  <ol class="breadcrumbs gt-separated dark hidden-xs">
+    <li><a href="../index.html">github_analyzer</a></li>
+    <li><a href="../github_analyzer/">github_analyzer.dart</a></li>
+    <li class="self-crumb">GithubAnalyzer class</li>
+  </ol>
+  <div class="self-name">GithubAnalyzer</div>
+  <form class="search navbar-right" role="search">
+    <input type="text" id="search-box" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+  <button class="toggle" id="theme-button" title="Toggle between light and dark mode" aria-label="Light and dark mode toggle">
+    <span id="dark-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      dark_mode
+    </span>
+    <span id="light-theme-button" class="material-symbols-outlined" aria-hidden="true">
+      light_mode
+    </span>
+  </button>
+</header>
+<main>
+<div
+    id="dartdoc-main-content"
+    class="main-content"
+    data-above-sidebar="github_analyzer&#47;github_analyzer-library-sidebar.html"
+    data-below-sidebar="github_analyzer&#47;GithubAnalyzer-class-sidebar.html">
+    <div>
+<h1><span class="kind-class">GithubAnalyzer</span> class 
+ 
+</h1></div>
+
+    
+<section class="desc markdown">
+  <p>Main analyzer class that orchestrates the repository analysis process.</p>
+<p><a href="../github_analyzer/GithubAnalyzer-class.html">GithubAnalyzer</a> is the central component for analyzing both local and remote
+repositories. It manages all dependencies, coordinates analysis services,
+and provides progress tracking capabilities.</p>
+<h2 id="features">Features</h2>
+<ul>
+<li>Analyzes local directories and remote GitHub repositories</li>
+<li>Supports both public and private repositories (with token)</li>
+<li>Real-time progress tracking via streams</li>
+<li>Optional result caching for performance</li>
+<li>Automatic resource management and cleanup</li>
+</ul>
+<h2 id="usage">Usage</h2>
+<pre class="language-dart"><code>// Create analyzer with default configuration
+final analyzer = await GithubAnalyzer.create();
+
+// Analyze a repository
+final result = await analyzer.analyze('https://github.com/flutter/flutter');
+
+// Clean up resources
+await analyzer.dispose();
+</code></pre>
+<p>See also:</p>
+<ul>
+<li><a href="../github_analyzer/GithubAnalyzerConfig-class.html">GithubAnalyzerConfig</a> for configuration options</li>
+<li><a href="../github_analyzer/AnalysisResult-class.html">AnalysisResult</a> for the structure of analysis output</li>
+<li><a href="../github_analyzer/AnalysisProgress-class.html">AnalysisProgress</a> for progress tracking details</li>
+</ul>
+</section>
+
+
+
+    
+  <section class="summary offset-anchor" id="constructors">
+    <h2>Constructors</h2>
+    <dl class="constructor-summary-list">
+        <dt id="GithubAnalyzer.new" class="callable">
+          <span class="name"><a href="../github_analyzer/GithubAnalyzer/GithubAnalyzer.html">GithubAnalyzer.new</a></span><span class="signature">({<span class="parameter" id="-param-config"><span>required</span> <span class="type-annotation"><a href="../github_analyzer/GithubAnalyzerConfig-class.html">GithubAnalyzerConfig</a></span> <span class="parameter-name">config</span>, </span><span class="parameter" id="-param-httpClientManager"><span>required</span> <span class="type-annotation">IHttpClientManager</span> <span class="parameter-name">httpClientManager</span>, </span><span class="parameter" id="-param-apiProvider"><span>required</span> <span class="type-annotation">IGithubApiProvider</span> <span class="parameter-name">apiProvider</span>, </span><span class="parameter" id="-param-zipDownloader"><span>required</span> <span class="type-annotation">ZipDownloader</span> <span class="parameter-name">zipDownloader</span>, </span><span class="parameter" id="-param-localAnalyzer"><span>required</span> <span class="type-annotation">LocalAnalyzerService</span> <span class="parameter-name">localAnalyzer</span>, </span><span class="parameter" id="-param-remoteAnalyzer"><span>required</span> <span class="type-annotation">RemoteAnalyzerService</span> <span class="parameter-name">remoteAnalyzer</span>, </span><span class="parameter" id="-param-cacheService"><span class="type-annotation">CacheService?</span> <span class="parameter-name">cacheService</span>, </span><span class="parameter" id="-param-isolatePool"><span class="type-annotation">IsolatePool?</span> <span class="parameter-name">isolatePool</span></span>})</span>
+        </dt>
+        <dd>
+          Creates an instance of <a href="../github_analyzer/GithubAnalyzer-class.html">GithubAnalyzer</a>.
+        </dd>
+    </dl>
+  </section>
+    
+  <section
+      class="summary offset-anchor"
+      id="instance-properties">
+    <h2>Properties</h2>
+    <dl class="properties">
+        <dt id="apiProvider" class="property">
+  <span class="name"><a href="../github_analyzer/GithubAnalyzer/apiProvider.html">apiProvider</a></span>
+  <span class="signature">&#8594; IGithubApiProvider</span>
+  
+
+</dt>
+<dd>
+  GitHub API provider for metadata and repository information
+  <div class="features"><span class="feature">final</span></div>
+
+</dd>
+
+        <dt id="cacheService" class="property">
+  <span class="name"><a href="../github_analyzer/GithubAnalyzer/cacheService.html">cacheService</a></span>
+  <span class="signature">&#8594; CacheService?</span>
+  
+
+</dt>
+<dd>
+  Optional cache service for storing analysis results
+  <div class="features"><span class="feature">final</span></div>
+
+</dd>
+
+        <dt id="config" class="property">
+  <span class="name"><a href="../github_analyzer/GithubAnalyzer/config.html">config</a></span>
+  <span class="signature">&#8594; <a href="../github_analyzer/GithubAnalyzerConfig-class.html">GithubAnalyzerConfig</a></span>
+  
+
+</dt>
+<dd>
+  Configuration settings for the analyzer
+  <div class="features"><span class="feature">final</span></div>
+
+</dd>
+
+        <dt id="hashCode" class="property inherited">
+  <span class="name"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Object/hashCode.html">hashCode</a></span>
+  <span class="signature">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/int-class.html">int</a></span>
+  
+
+</dt>
+<dd class="inherited">
+  The hash code for this object.
+  <div class="features"><span class="feature">no setter</span><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="httpClientManager" class="property">
+  <span class="name"><a href="../github_analyzer/GithubAnalyzer/httpClientManager.html">httpClientManager</a></span>
+  <span class="signature">&#8594; IHttpClientManager</span>
+  
+
+</dt>
+<dd>
+  HTTP client manager for network requests
+  <div class="features"><span class="feature">final</span></div>
+
+</dd>
+
+        <dt id="isolatePool" class="property">
+  <span class="name"><a href="../github_analyzer/GithubAnalyzer/isolatePool.html">isolatePool</a></span>
+  <span class="signature">&#8594; IsolatePool?</span>
+  
+
+</dt>
+<dd>
+  Optional isolate pool for parallel processing
+  <div class="features"><span class="feature">final</span></div>
+
+</dd>
+
+        <dt id="localAnalyzer" class="property">
+  <span class="name"><a href="../github_analyzer/GithubAnalyzer/localAnalyzer.html">localAnalyzer</a></span>
+  <span class="signature">&#8594; LocalAnalyzerService</span>
+  
+
+</dt>
+<dd>
+  Service for analyzing local directories
+  <div class="features"><span class="feature">final</span></div>
+
+</dd>
+
+        <dt id="progressStream" class="property">
+  <span class="name"><a href="../github_analyzer/GithubAnalyzer/progressStream.html">progressStream</a></span>
+  <span class="signature">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/Stream-class.html">Stream</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="../github_analyzer/AnalysisProgress-class.html">AnalysisProgress</a></span>&gt;</span></span>
+  
+
+</dt>
+<dd>
+  Stream of analysis progress updates.
+  <div class="features"><span class="feature">no setter</span></div>
+
+</dd>
+
+        <dt id="remoteAnalyzer" class="property">
+  <span class="name"><a href="../github_analyzer/GithubAnalyzer/remoteAnalyzer.html">remoteAnalyzer</a></span>
+  <span class="signature">&#8594; RemoteAnalyzerService</span>
+  
+
+</dt>
+<dd>
+  Service for analyzing remote GitHub repositories
+  <div class="features"><span class="feature">final</span></div>
+
+</dd>
+
+        <dt id="runtimeType" class="property inherited">
+  <span class="name"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Object/runtimeType.html">runtimeType</a></span>
+  <span class="signature">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/Type-class.html">Type</a></span>
+  
+
+</dt>
+<dd class="inherited">
+  A representation of the runtime type of the object.
+  <div class="features"><span class="feature">no setter</span><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="zipDownloader" class="property">
+  <span class="name"><a href="../github_analyzer/GithubAnalyzer/zipDownloader.html">zipDownloader</a></span>
+  <span class="signature">&#8594; ZipDownloader</span>
+  
+
+</dt>
+<dd>
+  ZIP downloader for fetching repository archives
+  <div class="features"><span class="feature">final</span></div>
+
+</dd>
+
+    </dl>
+  </section>
+
+    
+  <section
+      class="summary offset-anchor"
+      id="instance-methods">
+    <h2>Methods</h2>
+    <dl class="callables">
+        <dt id="analyze" class="callable">
+  <span class="name"><a href="../github_analyzer/GithubAnalyzer/analyze.html">analyze</a></span><span class="signature">(<wbr><span class="parameter" id="analyze-param-target"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span> <span class="parameter-name">target</span>, {</span><span class="parameter" id="analyze-param-branch"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a>?</span> <span class="parameter-name">branch</span>, </span><span class="parameter" id="analyze-param-useCache"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a>?</span> <span class="parameter-name">useCache</span></span>})
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="../github_analyzer/AnalysisResult-class.html">AnalysisResult</a></span>&gt;</span></span>
+  </span>
+  
+
+</dt>
+<dd>
+  Analyzes a target automatically detecting type (local path or remote URL).
+  
+
+</dd>
+
+        <dt id="analyzeLocal" class="callable">
+  <span class="name"><a href="../github_analyzer/GithubAnalyzer/analyzeLocal.html">analyzeLocal</a></span><span class="signature">(<wbr><span class="parameter" id="analyzeLocal-param-directoryPath"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span> <span class="parameter-name">directoryPath</span></span>)
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="../github_analyzer/AnalysisResult-class.html">AnalysisResult</a></span>&gt;</span></span>
+  </span>
+  
+
+</dt>
+<dd>
+  Analyzes a local directory.
+  
+
+</dd>
+
+        <dt id="analyzeRemote" class="callable">
+  <span class="name"><a href="../github_analyzer/GithubAnalyzer/analyzeRemote.html">analyzeRemote</a></span><span class="signature">(<wbr>{<span class="parameter" id="analyzeRemote-param-repositoryUrl"><span>required</span> <span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span> <span class="parameter-name">repositoryUrl</span>, </span><span class="parameter" id="analyzeRemote-param-branch"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a>?</span> <span class="parameter-name">branch</span>, </span><span class="parameter" id="analyzeRemote-param-useCache"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a>?</span> <span class="parameter-name">useCache</span></span>})
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="../github_analyzer/AnalysisResult-class.html">AnalysisResult</a></span>&gt;</span></span>
+  </span>
+  
+
+</dt>
+<dd>
+  Analyzes a remote GitHub repository from URL.
+  
+
+</dd>
+
+        <dt id="clearCache" class="callable">
+  <span class="name"><a href="../github_analyzer/GithubAnalyzer/clearCache.html">clearCache</a></span><span class="signature">(<wbr>)
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter">void</span>&gt;</span></span>
+  </span>
+  
+
+</dt>
+<dd>
+  Clears all cached analysis results.
+  
+
+</dd>
+
+        <dt id="dispose" class="callable">
+  <span class="name"><a href="../github_analyzer/GithubAnalyzer/dispose.html">dispose</a></span><span class="signature">(<wbr>)
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter">void</span>&gt;</span></span>
+  </span>
+  
+
+</dt>
+<dd>
+  Disposes all resources and cleans up.
+  
+
+</dd>
+
+        <dt id="fetchMetadataOnly" class="callable">
+  <span class="name"><a href="../github_analyzer/GithubAnalyzer/fetchMetadataOnly.html">fetchMetadataOnly</a></span><span class="signature">(<wbr><span class="parameter" id="fetchMetadataOnly-param-repositoryUrl"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span> <span class="parameter-name">repositoryUrl</span>, {</span><span class="parameter" id="fetchMetadataOnly-param-branch"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a>?</span> <span class="parameter-name">branch</span></span>})
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="../github_analyzer/RepositoryMetadata-class.html">RepositoryMetadata</a></span>&gt;</span></span>
+  </span>
+  
+
+</dt>
+<dd>
+  Fetches only repository metadata without downloading or analyzing files.
+  
+
+</dd>
+
+        <dt id="getCacheStatistics" class="callable">
+  <span class="name"><a href="../github_analyzer/GithubAnalyzer/getCacheStatistics.html">getCacheStatistics</a></span><span class="signature">(<wbr>)
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Map-class.html">Map</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span>, <span class="type-parameter">dynamic</span>&gt;</span>?</span>&gt;</span></span>
+  </span>
+  
+
+</dt>
+<dd>
+  Retrieves cache statistics.
+  
+
+</dd>
+
+        <dt id="noSuchMethod" class="callable inherited">
+  <span class="name"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Object/noSuchMethod.html">noSuchMethod</a></span><span class="signature">(<wbr><span class="parameter" id="noSuchMethod-param-invocation"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Invocation-class.html">Invocation</a></span> <span class="parameter-name">invocation</span></span>)
+    <span class="returntype parameter">&#8594; dynamic</span>
+  </span>
+  
+
+</dt>
+<dd class="inherited">
+  Invoked when a nonexistent method or property is accessed.
+  <div class="features"><span class="feature">inherited</span></div>
+
+</dd>
+
+        <dt id="toString" class="callable inherited">
+  <span class="name"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Object/toString.html">toString</a></span><span class="signature">(<wbr>)
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/String-class.html">String</a></span>
+  </span>
+  
+
+</dt>
+<dd class="inherited">
+  A string representation of this object.
+  <div class="features"><span class="feature">inherited</span></div>
+
+</dd>
+
+    </dl>
+  </section>
+    
+  <section
+      class="summary offset-anchor inherited"
+      id="operators">
+    <h2>Operators</h2>
+    <dl class="callables">
+        <dt id="operator ==" class="callable inherited">
+  <span class="name"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Object/operator_equals.html">operator ==</a></span><span class="signature">(<wbr><span class="parameter" id="==-param-other"><span class="type-annotation"><a href="https://api.dart.dev/stable/3.9.2/dart-core/Object-class.html">Object</a></span> <span class="parameter-name">other</span></span>)
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/bool-class.html">bool</a></span>
+  </span>
+  
+
+</dt>
+<dd class="inherited">
+  The equality operator.
+  <div class="features"><span class="feature">inherited</span></div>
+
+</dd>
+
+    </dl>
+  </section>
+    
+    
+  <section class="summary offset-anchor" id="static-methods">
+    <h2>Static Methods</h2>
+    <dl class="callables">
+        <dt id="create" class="callable">
+  <span class="name"><a href="../github_analyzer/GithubAnalyzer/create.html">create</a></span><span class="signature">(<wbr>{<span class="parameter" id="create-param-config"><span class="type-annotation"><a href="../github_analyzer/GithubAnalyzerConfig-class.html">GithubAnalyzerConfig</a>?</span> <span class="parameter-name">config</span></span>})
+    <span class="returntype parameter">&#8594; <a href="https://api.dart.dev/stable/3.9.2/dart-core/Future-class.html">Future</a><span class="signature">&lt;<wbr><span class="type-parameter"><a href="../github_analyzer/GithubAnalyzer-class.html">GithubAnalyzer</a></span>&gt;</span></span>
+  </span>
+  
+
+</dt>
+<dd>
+  Factory method to create a <a href="../github_analyzer/GithubAnalyzer-class.html">GithubAnalyzer</a> with automatic dependency setup.
+  
+
+</dd>
+
+    </dl>
+  </section>
+    
+
+  </div> <!-- /.main-content -->
+  <div id="dartdoc-sidebar-left" class="sidebar sidebar-offcanvas-left">
+    <!-- The search input and breadcrumbs below are only responsively visible at low resolutions. -->
+<header id="header-search-sidebar" class="hidden-l">
+  <form class="search-sidebar" role="search">
+    <input type="text" id="search-sidebar" autocomplete="off" disabled class="form-control typeahead" placeholder="Loading search...">
+  </form>
+</header>
+<ol class="breadcrumbs gt-separated dark hidden-l" id="sidebar-nav">
+    <li><a href="../index.html">github_analyzer</a></li>
+    <li><a href="../github_analyzer/">github_analyzer</a></li>
+    <li class="self-crumb">GithubAnalyzer class</li>
+</ol>
+
+    <h5>github_analyzer library</h5>
+    <div id="dartdoc-sidebar-left-content"></div>
+  </div>
+  <div id="dartdoc-sidebar-right" class="sidebar sidebar-offcanvas-right">
+  </div><!--/.sidebar-offcanvas-->
+</main>
+<footer>
+  <span class="no-break">
+    github_analyzer
+      0.1.7
+  </span>
+  
+</footer>
+
+
+<script src="../static-assets/highlight.pack.js?v1"></script>
+<script src="../static-assets/docs.dart.js"></script>
+
+</body>
+</html>
+
