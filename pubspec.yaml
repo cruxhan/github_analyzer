@@ -1,0 +1,56 @@
+name: github_analyzer
+description: "Analyze GitHub repositories and generate AI context for LLMs with cross-platform support"
+version: 0.1.5
+
+homepage: https://github.com/cruxhan/github_analyzer
+repository: https://github.com/cruxhan/github_analyzer
+issue_tracker: https://github.com/cruxhan/github_analyzer/issues
+
+environment:
+  sdk: ^3.8.0
+
+dependencies:
+  # Archive extraction for ZIP files
+  archive: ^4.0.0
+  
+  # HTTP client for GitHub API
+  dio: ^5.4.3+1
+  
+  # Logging support
+  logging: ^1.2.0
+  
+  # Path manipulation
+  path: ^1.9.0
+  
+  # Cross-platform IO (web + native)
+  universal_io: ^2.2.2
+
+  glob: ^2.1.2
+  crypto: ^3.0.3 
+  get_it: ^8.3.0
+  freezed_annotation: ^3.1.0
+  json_annotation: ^4.9.0
+
+dev_dependencies:
+  # Testing
+  test: ^1.25.2
+  build_runner: ^2.10.1
+  freezed: ^3.2.3
+
+  
+  # Mocking for tests
+  mockito: ^5.4.4
+  
+  # Code generation for mocks
+  
+  # Linting
+  lints: ^3.0.0
+  json_serializable: ^6.11.1
+
+platforms:
+  android:
+  ios:
+  linux:
+  macos:
+  web:
+  windows:
