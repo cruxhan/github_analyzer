@@ -6,7 +6,7 @@ build/
 .packages
 .pub/
 *.sqlite3
-.github_analyzer_cach/
+.github_analyzer_cache/
 
 # IDE/에디터 파일
 .idea/

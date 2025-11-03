@@ -8,10 +8,11 @@
 /// - Progress tracking
 /// - Metadata-only fetch
 /// - Convenience functions
+import 'dart:io'; // ✅ 추가: 환경 변수 사용을 위해
 import 'package:github_analyzer/github_analyzer.dart';
 
 void main() async {
-  print('🚀 GitHub Analyzer v0.1.2 Examples\n');
+  print('🚀 GitHub Analyzer v0.1.6 Examples\n'); // ✅ 버전 업데이트
 
   // Example 1: Quick Analysis
   await example1_quickAnalysis();
@@ -43,7 +44,7 @@ Future<void> example1_quickAnalysis() async {
   print('📝 Example 1: Quick Analysis\n');
 
   try {
-    // Analyze a repository quickly
+    // Analyze a public repository quickly (no token needed)
     final result = await analyzeQuick('https://github.com/dart-lang/sdk');
 
     print('✅ Analysis completed!');
@@ -63,9 +64,13 @@ Future<void> example2_llmOptimized() async {
   print('📝 Example 2: LLM-Optimized Analysis\n');
 
   try {
+    // ✅ 수정: 환경 변수에서 토큰 로드 (비공개 저장소용)
+    final token = Platform.environment['GITHUB_TOKEN'];
+
     // Generate markdown file optimized for AI/LLM context
     final outputPath = await analyzeForLLM(
       'https://github.com/dart-lang/http',
+      githubToken: token, // ✅ 추가: 명시적 토큰 전달
       outputDir: './output',
       maxFiles: 50,
       markdownConfig: MarkdownConfig.compact,
@@ -83,9 +88,12 @@ Future<void> example3_advancedConfig() async {
   print('📝 Example 3: Advanced Configuration\n');
 
   try {
+    // ✅ 수정: 환경 변수에서 토큰 로드
+    final token = Platform.environment['GITHUB_TOKEN'];
+
     // Create custom configuration
     final config = await GithubAnalyzerConfig.create(
-      githubToken: null, // Will auto-load from .env if exists
+      githubToken: token, // ✅ 변경: null 대신 환경 변수에서 로드
       excludePatterns: ['test/**', 'example/**', '*.g.dart', '*.freezed.dart'],
       maxFileSize: 500 * 1024, // 500KB
       enableCache: true,
