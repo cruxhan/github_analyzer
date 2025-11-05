@@ -140,6 +140,9 @@ class RemoteAnalyzerService {
       final repositoryUrl = 'https://github.com/$owner/$repo';
 
       if (useCache && config.enableCache && cacheService != null) {
+        if (!cacheService!.isInitialized) {
+          await cacheService!.initialize();
+        }
         _emitProgress(
           AnalysisProgress(
             phase: AnalysisPhase.initializing,

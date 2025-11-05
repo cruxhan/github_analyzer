@@ -10,16 +10,13 @@ import 'package:github_analyzer/src/models/source_file.dart';
 class CacheService {
   final String cacheDirectory;
   final Duration? maxAge;
-  bool _isInitialized = false;
+  bool isInitialized = false;
 
-  CacheService({
-    required this.cacheDirectory,
-    this.maxAge,
-  });
+  CacheService({required this.cacheDirectory, this.maxAge});
 
   /// Initializes the cache service by creating the cache directory if it doesn't exist
   Future<void> initialize() async {
-    if (_isInitialized) return;
+    if (isInitialized) return;
 
     try {
       final dir = Directory(cacheDirectory);
@@ -35,7 +32,7 @@ class CacheService {
         logger.info('File-level cache directory created');
       }
 
-      _isInitialized = true;
+      isInitialized = true;
     } on FileSystemException catch (e, stackTrace) {
       // FileSystemException includes PathAccessException as a subtype
       logger.severe('Failed to initialize cache directory', e, stackTrace);
@@ -43,13 +40,14 @@ class CacheService {
       // Check if it's a permission issue specifically
       final isPermissionError =
           e.osError?.errorCode == 13 || // Unix: Permission denied
-              e.osError?.errorCode == 5; // Windows: Access denied
+          e.osError?.errorCode == 5; // Windows: Access denied
 
       if (isPermissionError) {
         throw AnalyzerException(
           'Permission denied',
           code: AnalyzerErrorCode.cacheError,
-          details: 'Cannot access cache directory: ${e.message}\n'
+          details:
+              'Cannot access cache directory: ${e.message}\n'
               'Please check directory permissions.',
           originalException: e,
           stackTrace: stackTrace,
@@ -89,7 +87,7 @@ class CacheService {
 
   /// Retrieves a cached AnalysisResult if available and not expired
   Future<AnalysisResult?> get(String repositoryUrl, String commitHash) async {
-    if (!_isInitialized) {
+    if (!isInitialized) {
       throw AnalyzerException(
         'CacheService not initialized',
         code: AnalyzerErrorCode.cacheError,
@@ -172,7 +170,7 @@ class CacheService {
     String commitHash,
     AnalysisResult result,
   ) async {
-    if (!_isInitialized) {
+    if (!isInitialized) {
       throw AnalyzerException(
         'CacheService not initialized',
         code: AnalyzerErrorCode.cacheError,
@@ -218,7 +216,7 @@ class CacheService {
 
   /// Retrieves a cached file analysis if available
   Future<SourceFile?> getFile(String filePath, String contentHash) async {
-    if (!_isInitialized) {
+    if (!isInitialized) {
       throw AnalyzerException(
         'CacheService not initialized',
         code: AnalyzerErrorCode.cacheError,
@@ -281,7 +279,7 @@ class CacheService {
     String contentHash,
     SourceFile sourceFile,
   ) async {
-    if (!_isInitialized) {
+    if (!isInitialized) {
       throw AnalyzerException(
         'CacheService not initialized',
         code: AnalyzerErrorCode.cacheError,
@@ -297,11 +295,17 @@ class CacheService {
       logger.fine('Saved file cache for $filePath');
     } on FileSystemException catch (e, stackTrace) {
       logger.warning(
-          'File system error writing file cache for $key', e, stackTrace);
+        'File system error writing file cache for $key',
+        e,
+        stackTrace,
+      );
       // Don't throw - file-level cache failures shouldn't break analysis
     } on JsonUnsupportedObjectError catch (e, stackTrace) {
       logger.warning(
-          'JSON serialization error for file cache $key', e, stackTrace);
+        'JSON serialization error for file cache $key',
+        e,
+        stackTrace,
+      );
       // Don't throw
     } catch (e, stackTrace) {
       logger.warning('Failed to write file cache for $key', e, stackTrace);
@@ -402,7 +406,8 @@ class CacheService {
             await entity.delete(recursive: true);
           } on FileSystemException catch (e) {
             logger.warning(
-                'Error deleting cache entry: ${entity.path} - ${e.message}');
+              'Error deleting cache entry: ${entity.path} - ${e.message}',
+            );
             // Continue deleting other entries
           }
         }
@@ -431,7 +436,8 @@ class CacheService {
             await entity.delete(recursive: true);
           } on FileSystemException catch (e) {
             logger.warning(
-                'Error deleting file cache entry: ${entity.path} - ${e.message}');
+              'Error deleting file cache entry: ${entity.path} - ${e.message}',
+            );
             // Continue deleting other entries
           }
         }
@@ -475,8 +481,9 @@ class CacheService {
               fileLevelCacheSize += size;
             }
           } on FileSystemException catch (e) {
-            logger
-                .fine('Error getting file size: ${entity.path} - ${e.message}');
+            logger.fine(
+              'Error getting file size: ${entity.path} - ${e.message}',
+            );
             // Continue counting other files
           }
         }

@@ -88,26 +88,24 @@ Future<void> example1_quickAnalysis() async {
 /// export GITHUB_TOKEN=ghp_your_token_here
 /// dart run example/example.dart
 /// ```
+/// Example 2: LLM-Optimized Analysis with Markdown Generation
 Future<void> example2_llmOptimized() async {
   print('📝 Example 2: LLM-Optimized Analysis\n');
 
   try {
-    // Load GitHub token from environment variable (optional, for private repos)
     final token = Platform.environment['GITHUB_TOKEN'];
 
     if (token == null || token.isEmpty) {
       print('ℹ️  No GITHUB_TOKEN found. Analyzing public repository only.');
     }
 
-    // Generate markdown file optimized for AI/LLM context
     final outputPath = await analyzeForLLM(
-      'https://github.com/dart-lang/http',
-      githubToken:
-          token, // Pass token for private repos or to avoid rate limits
+      'https://github.com/flutter/packages',
+      githubToken: token,
       outputDir: './output',
       maxFiles: 50,
       markdownConfig: MarkdownConfig.compact,
-      verbose: true, // Enable detailed logging
+      verbose: true,
     );
 
     print('✅ Markdown generated: $outputPath');
@@ -265,15 +263,15 @@ Future<void> example6_metadataOnly() async {
 }
 
 /// Example 7: Markdown generation from analysis result
-///
-/// This demonstrates how to generate markdown documentation from an
-/// analysis result using different configuration options.
 Future<void> example7_markdownGeneration() async {
   print('📝 Example 7: Markdown Generation\n');
 
   try {
     final analyzer = await GithubAnalyzer.create();
-    final result = await analyzer.analyze('https://github.com/dart-lang/http');
+
+    final result = await analyzer.analyze(
+      'https://github.com/dart-lang/lints',
+    );
 
     // Generate markdown using ContextService (saves to file)
     final contextService = ContextService();

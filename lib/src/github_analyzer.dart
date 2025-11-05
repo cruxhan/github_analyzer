@@ -192,7 +192,6 @@ class GithubAnalyzer {
         cacheDirectory: effectiveConfig.cacheDirectory,
         maxAge: effectiveConfig.cacheDuration,
       );
-      await cacheService.initialize();
     }
 
     // Create isolate pool for parallel processing if enabled

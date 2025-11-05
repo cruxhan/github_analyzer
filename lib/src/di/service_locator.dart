@@ -68,7 +68,7 @@ Future<void> setupDependencies({GithubAnalyzerConfig? config}) async {
       cacheDirectory: effectiveConfig.cacheDirectory,
       maxAge: effectiveConfig.cacheDuration,
     );
-    await cacheService.initialize();
+    // await cacheService.initialize();
     getIt.registerSingleton<CacheService>(cacheService);
   }
 

@@ -127,7 +127,6 @@ final analyzer = await GithubAnalyzer.create(config: customConfig);
       cacheDirectory: effectiveConfig.cacheDirectory,
       maxAge: effectiveConfig.cacheDuration,
     );
-    await cacheService.initialize();
   }
 
   &#47;&#47; Create isolate pool for parallel processing if enabled
@@ -195,7 +194,7 @@ final analyzer = await GithubAnalyzer.create(config: customConfig);
 <footer>
   <span class="no-break">
     github_analyzer
-      0.1.7
+      0.1.8
   </span>
   
 </footer>

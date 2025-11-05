@@ -34,10 +34,7 @@ class IncrementalAnalyzer {
   final GithubAnalyzerConfig config;
   final CacheService? cacheService;
 
-  IncrementalAnalyzer({
-    required this.config,
-    this.cacheService,
-  });
+  IncrementalAnalyzer({required this.config, this.cacheService});
 
   /// Analyzes a local directory based on previous analysis result
   Future<AnalysisResult> analyze(
@@ -90,6 +87,9 @@ class IncrementalAnalyzer {
     AnalysisResult previousResult,
     FileChange changes,
   ) async {
+    if (!cacheService!.isInitialized) {
+      await cacheService!.initialize();
+    }
     final fileMap = <String, SourceFile>{
       // 🔧 Generic type
       for (var f in previousResult.files) f.path: f,
@@ -159,8 +159,8 @@ class IncrementalAnalyzer {
     final primaryLanguage = statistics.languageDistribution.isEmpty
         ? null
         : statistics.languageDistribution.entries
-            .reduce((a, b) => a.value > b.value ? a : b)
-            .key;
+              .reduce((a, b) => a.value > b.value ? a : b)
+              .key;
 
     final updatedMetadata = previousResult.metadata.copyWith(
       language: primaryLanguage,
@@ -214,8 +214,8 @@ class IncrementalAnalyzer {
     final primaryLanguage = statistics.languageDistribution.isEmpty
         ? null
         : statistics.languageDistribution.entries
-            .reduce((a, b) => a.value > b.value ? a : b)
-            .key;
+              .reduce((a, b) => a.value > b.value ? a : b)
+              .key;
 
     final updatedMetadata = previousResult.metadata.copyWith(
       language: primaryLanguage,
@@ -329,10 +329,6 @@ class IncrementalAnalyzer {
         .difference(currentFilePaths.toSet())
         .toList();
 
-    return FileChange(
-      added: added,
-      modified: modified,
-      deleted: deleted,
-    );
+    return FileChange(added: added, modified: modified, deleted: deleted);
   }
 }
