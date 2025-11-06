@@ -1,3 +1,12 @@
+# README Tabs (English / 한국어)
+
+## 📖 Tab Navigation
+
+<details open>
+<summary><strong>🇺🇸 English Version</strong></summary>
+
+---
+
 # GitHub Analyzer
 
 **Powerful GitHub Repository Analysis Tool for AI/LLM**
@@ -30,22 +39,22 @@ A pure Dart package that analyzes GitHub repositories and automatically generate
 
 Add to your `pubspec.yaml`:
 
-```yaml
+`yaml
 dependencies:
   github_analyzer: ^0.1.9
-```
+`
 
 Install:
 
-```bash
+`bash
 dart pub get
-```
+`
 
 or
 
-```bash
+`bash
 dart pub add github_analyzer
-```
+`
 
 ## 🚀 Quick Start
 
@@ -64,11 +73,10 @@ dart pub add github_analyzer
 
 ### 2. Basic Usage (Public Repository)
 
-```dart
+`dart
 import 'package:github_analyzer/github_analyzer.dart';
 
 void main() async {
-  // Analyze a public repository
   final result = await analyzeQuick(
     'https://github.com/flutter/flutter',
   );
@@ -77,65 +85,60 @@ void main() async {
   print('Lines: ${result.statistics.totalLines}');
   print('Language: ${result.metadata.language}');
 }
-```
+`
 
 ### 3. Private Repository Analysis
 
-```dart
+`dart
 import 'package:github_analyzer/github_analyzer.dart';
 
 void main() async {
-  // Analyze private repository with token
   final result = await analyzeQuick(
     'https://github.com/your/private-repo',
-    githubToken: 'ghp_your_token_here', // Pass token explicitly
+    githubToken: 'ghp_your_token_here',
   );
 
   print('Files: ${result.statistics.totalFiles}');
 }
-```
+`
 
 ### 4. Generate Markdown for LLM
 
-```dart
+`dart
 import 'package:github_analyzer/github_analyzer.dart';
 
 void main() async {
-  // LLM-optimized analysis and markdown generation
   final outputPath = await analyzeForLLM(
     'https://github.com/your/repo',
-    githubToken: 'ghp_your_token_here', // For private repos
+    githubToken: 'ghp_your_token_here',
     outputDir: './analysis',
     maxFiles: 200,
   );
 
   print('Generated: $outputPath');
 }
-```
+`
 
 ### 5. Advanced Usage
 
-```dart
+`dart
 import 'package:github_analyzer/github_analyzer.dart';
 
 void main() async {
-  // Create analyzer with custom config
   final config = await GithubAnalyzerConfig.create(
-    githubToken: 'ghp_your_token_here', // Pass token explicitly
+    githubToken: 'ghp_your_token_here',
     excludePatterns: ['test/', 'docs/'],
-    maxFileSize: 1024 * 1024, // 1MB
+    maxFileSize: 1024 * 1024,
     enableCache: true,
   );
 
   final analyzer = await GithubAnalyzer.create(config: config);
 
-  // Analyze remote repository (disable cache)
   final result = await analyzer.analyzeRemote(
     repositoryUrl: 'https://github.com/your/repo',
-    useCache: false, // Always fetch latest data
+    useCache: false,
   );
 
-  // Generate compact markdown
   final contextService = ContextService();
   final outputPath = await contextService.generate(
     result,
@@ -144,21 +147,19 @@ void main() async {
   );
 
   print('Generated: $outputPath');
-
-  // Clean up resources
   await analyzer.dispose();
 }
-```
+`
 
 ## ⚙️ Configuration Options
 
 ### Quick Analysis (Fast)
 
-```dart
+`dart
 final config = await GithubAnalyzerConfig.quick(
-  githubToken: 'your_token', // Optional for public repos
+  githubToken: 'your_token',
 );
-```
+`
 
 - ⚡ Fast speed
 - 📄 Max 100 files
@@ -167,12 +168,12 @@ final config = await GithubAnalyzerConfig.quick(
 
 ### LLM Optimized (Balanced)
 
-```dart
+`dart
 final config = await GithubAnalyzerConfig.forLLM(
-  githubToken: 'your_token', // Optional for public repos
+  githubToken: 'your_token',
   maxFiles: 200,
 );
-```
+`
 
 - ⚖️ Balanced performance
 - 📄 Custom file count
@@ -182,14 +183,14 @@ final config = await GithubAnalyzerConfig.forLLM(
 
 ### Full Analysis (Comprehensive)
 
-```dart
+`dart
 final config = await GithubAnalyzerConfig.create(
-  githubToken: 'your_token', // Optional for public repos
+  githubToken: 'your_token',
   enableCache: true,
   enableIsolatePool: true,
   maxConcurrentRequests: 10,
 );
-```
+`
 
 - 🔍 Detailed analysis
 - ♾️ Unlimited files
@@ -213,26 +214,23 @@ final config = await GithubAnalyzerConfig.create(
 
 ### Use in Code
 
-```dart
-// Option 1: Pass token to convenience functions
+`dart
 final result = await analyzeQuick(
   'https://github.com/user/private-repo',
   githubToken: 'ghp_your_token_here',
 );
 
-// Option 2: Pass token via config
 final config = await GithubAnalyzerConfig.create(
   githubToken: 'ghp_your_token_here',
 );
 final analyzer = await GithubAnalyzer.create(config: config);
-```
+`
 
 ### Secure Token Management
 
 **Best practices:**
 
-```dart
-// 1. Load from environment variables
+`dart
 import 'dart:io';
 
 void main() async {
@@ -243,10 +241,9 @@ void main() async {
     githubToken: token,
   );
 }
-```
+`
 
-```dart
-// 2. Load from secure storage (mobile/desktop)
+`dart
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 Future<void> analyze() async {
@@ -258,15 +255,15 @@ Future<void> analyze() async {
     githubToken: token,
   );
 }
-```
+`
 
 ## 📤 Output Formats
 
 ### Compact (LLM Friendly)
 
-```dart
+`dart
 final config = MarkdownConfig.compact;
-```
+`
 
 - Minimal formatting
 - No statistics
@@ -274,9 +271,9 @@ final config = MarkdownConfig.compact;
 
 ### Standard (Balanced)
 
-```dart
+`dart
 final config = MarkdownConfig.standard;
-```
+`
 
 - Includes statistics
 - Code blocks
@@ -284,9 +281,9 @@ final config = MarkdownConfig.standard;
 
 ### Detailed (Comprehensive)
 
-```dart
+`dart
 final config = MarkdownConfig.detailed;
-```
+`
 
 - Full statistics
 - Language distribution
@@ -304,34 +301,30 @@ final config = MarkdownConfig.detailed;
 
 ## 🛠️ Convenience Functions
 
-```dart
-// Quick analysis (public repo)
+`dart
 final result = await analyzeQuick('https://github.com/user/repo');
 
-// Quick analysis (private repo)
 final result = await analyzeQuick(
   'https://github.com/user/private-repo',
   githubToken: 'your_token',
 );
 
-// LLM-optimized analysis + markdown generation
 final outputPath = await analyzeForLLM(
   'https://github.com/user/repo',
-  githubToken: 'your_token', // Optional for public repos
+  githubToken: 'your_token',
   outputDir: './output',
   maxFiles: 100,
 );
 
-// Custom config analysis
 final result = await analyze(
   'https://github.com/user/repo',
   config: await GithubAnalyzerConfig.create(
     githubToken: 'your_token',
   ),
   verbose: true,
-  useCache: false, // Disable cache
+  useCache: false,
 );
-```
+`
 
 ## 🔍 Troubleshooting
 
@@ -340,13 +333,7 @@ final result = await analyze(
 **Cause:** Missing or insufficient GitHub token permissions
 
 **Solution:**
-1. Ensure you're passing the token correctly:
-   ```dart
-   final result = await analyzeQuick(
-     'https://github.com/user/repo',
-     githubToken: 'ghp_your_token_here',
-   );
-   ```
+1. Ensure you're passing the token correctly
 2. Fine-grained token: Verify repository access settings
 3. Classic token: Ensure `repo` scope is enabled
 4. Test token: `curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user`
@@ -365,82 +352,51 @@ final result = await analyze(
 **Cause:** GitHub API rate limit (60 req/hr without token)
 
 **Solution:**
-- Pass GitHub token to increase limit to 5,000 req/hr:
-  ```dart
-  final result = await analyzeQuick(
-    'https://github.com/user/repo',
-    githubToken: 'your_token',
-  );
-  ```
+- Pass GitHub token to increase limit to 5,000 req/hr
 
 ### Cache Not Respecting useCache: false
 
 **Fixed in v0.1.5:** Cache now correctly respects the `useCache` parameter.
 
-```dart
-// This will NOT create cache
+`dart
 final result = await analyzer.analyze(
   'https://github.com/user/repo',
   useCache: false,
 );
-```
+`
 
 ## 📝 Examples
 
-Check out more examples in the `example/` directory:
-
-- `demo.dart` - Comprehensive demo with performance metrics
-- Basic usage examples
-- Custom configuration examples
+Check out more examples in the `example/` directory.
 
 ## 🤝 Contributing
 
-Contributions are always welcome! Feel free to submit Pull Requests.
-
-### Development Setup
-
-```bash
-# Clone repository
+`bash
 git clone https://github.com/cruxhan/github_analyzer.git
-
-# Install dependencies
 dart pub get
-
-# Run tests
 dart test
-```
+`
 
 ## 📄 License
 
-MIT License - See [LICENSE](LICENSE) file for details.
-
-## 🔗 Links
-
-- [pub.dev Package](https://pub.dev/packages/github_analyzer)
-- [GitHub Repository](https://github.com/cruxhan/github_analyzer)
-- [Issue Tracker](https://github.com/cruxhan/github_analyzer/issues)
-- [Changelog](CHANGELOG.md)
+MIT License
 
 ## 💡 Usage Tips
 
 1. **Large Repositories**: Limit file count with `maxFiles` parameter
 2. **Cache Management**: Use `useCache: false` to always fetch latest data
-3. **Token Security**: Never hardcode tokens - use environment variables or secure storage
-4. **Performance Optimization**: Enable parallel processing with `enableIsolatePool: true`
-5. **LLM Token Savings**: Use `MarkdownConfig.compact`
-6. **Private Repos**: Always pass `githubToken` parameter explicitly
-
-## 🆕 What's New in v0.1.7
-
-- ✅ **Fixed:** Cache now respects `useCache: false` parameter
-- ✅ **Changed:** Removed automatic .env loading for better security
-- ✅ **Improved:** Explicit token passing via parameters
-- ✅ **Fixed:** Private repository analysis with HTTP redirect support
+3. **Token Security**: Never hardcode tokens
+4. **Performance**: Enable `enableIsolatePool: true`
+5. **LLM Savings**: Use `MarkdownConfig.compact`
 
 ---
 
-**Made with ❤️ for the Dart & Flutter community**
+</details>
 
+<details>
+<summary><strong>🇰🇷 한국어 버전</strong></summary>
+
+---
 
 # GitHub Analyzer
 
@@ -474,16 +430,22 @@ GitHub 저장소를 분석하고 AI 및 LLM 컨텍스트에 최적화된 마크�
 
 `pubspec.yaml`에 추가:
 
-```yaml
+`yaml
 dependencies:
-  github_analyzer: ^0.1.5
-```
+  github_analyzer: ^0.1.9
+`
 
 설치:
 
-```bash
+`bash
 dart pub get
-```
+`
+
+또는
+
+`bash
+dart pub add github_analyzer
+`
 
 ## 🚀 빠른 시작
 
@@ -502,11 +464,10 @@ dart pub get
 
 ### 2. 기본 사용법 (공개 저장소)
 
-```dart
+`dart
 import 'package:github_analyzer/github_analyzer.dart';
 
 void main() async {
-  // 공개 저장소 분석
   final result = await analyzeQuick(
     'https://github.com/flutter/flutter',
   );
@@ -515,65 +476,60 @@ void main() async {
   print('라인: ${result.statistics.totalLines}');
   print('언어: ${result.metadata.language}');
 }
-```
+`
 
 ### 3. 비공개 저장소 분석
 
-```dart
+`dart
 import 'package:github_analyzer/github_analyzer.dart';
 
 void main() async {
-  // 토큰으로 비공개 저장소 분석
   final result = await analyzeQuick(
     'https://github.com/your/private-repo',
-    githubToken: 'ghp_your_token_here', // 토큰 명시적 전달
+    githubToken: 'ghp_your_token_here',
   );
 
   print('파일: ${result.statistics.totalFiles}');
 }
-```
+`
 
 ### 4. LLM용 마크다운 생성
 
-```dart
+`dart
 import 'package:github_analyzer/github_analyzer.dart';
 
 void main() async {
-  // LLM 최적화 분석 및 마크다운 생성
   final outputPath = await analyzeForLLM(
     'https://github.com/your/repo',
-    githubToken: 'ghp_your_token_here', // 비공개 저장소의 경우
+    githubToken: 'ghp_your_token_here',
     outputDir: './analysis',
     maxFiles: 200,
   );
 
   print('생성됨: $outputPath');
 }
-```
+`
 
 ### 5. 고급 사용법
 
-```dart
+`dart
 import 'package:github_analyzer/github_analyzer.dart';
 
 void main() async {
-  // 사용자 정의 설정으로 분석기 생성
   final config = await GithubAnalyzerConfig.create(
-    githubToken: 'ghp_your_token_here', // 토큰 명시적 전달
+    githubToken: 'ghp_your_token_here',
     excludePatterns: ['test/', 'docs/'],
-    maxFileSize: 1024 * 1024, // 1MB
+    maxFileSize: 1024 * 1024,
     enableCache: true,
   );
 
   final analyzer = await GithubAnalyzer.create(config: config);
 
-  // 원격 저장소 분석 (캐시 비활성화)
   final result = await analyzer.analyzeRemote(
     repositoryUrl: 'https://github.com/your/repo',
-    useCache: false, // 항상 최신 데이터 가져오기
+    useCache: false,
   );
 
-  // 간결한 마크다운 생성
   final contextService = ContextService();
   final outputPath = await contextService.generate(
     result,
@@ -582,21 +538,19 @@ void main() async {
   );
 
   print('생성됨: $outputPath');
-
-  // 리소스 정리
   await analyzer.dispose();
 }
-```
+`
 
 ## ⚙️ 설정 옵션
 
 ### 빠른 분석 (고속)
 
-```dart
+`dart
 final config = await GithubAnalyzerConfig.quick(
-  githubToken: 'your_token', // 공개 저장소는 선택사항
+  githubToken: 'your_token',
 );
-```
+`
 
 - ⚡ 빠른 속도
 - 📄 최대 100개 파일
@@ -605,12 +559,12 @@ final config = await GithubAnalyzerConfig.quick(
 
 ### LLM 최적화 (균형)
 
-```dart
+`dart
 final config = await GithubAnalyzerConfig.forLLM(
-  githubToken: 'your_token', // 공개 저장소는 선택사항
+  githubToken: 'your_token',
   maxFiles: 200,
 );
-```
+`
 
 - ⚖️ 균형잡힌 성능
 - 📄 사용자 정의 파일 수
@@ -620,14 +574,14 @@ final config = await GithubAnalyzerConfig.forLLM(
 
 ### 전체 분석 (종합)
 
-```dart
+`dart
 final config = await GithubAnalyzerConfig.create(
-  githubToken: 'your_token', // 공개 저장소는 선택사항
+  githubToken: 'your_token',
   enableCache: true,
   enableIsolatePool: true,
   maxConcurrentRequests: 10,
 );
-```
+`
 
 - 🔍 상세 분석
 - ♾️ 무제한 파일
@@ -651,26 +605,23 @@ final config = await GithubAnalyzerConfig.create(
 
 ### 코드에서 사용
 
-```dart
-// 옵션 1: 편의 함수에 토큰 전달
+`dart
 final result = await analyzeQuick(
   'https://github.com/user/private-repo',
   githubToken: 'ghp_your_token_here',
 );
 
-// 옵션 2: 설정을 통해 토큰 전달
 final config = await GithubAnalyzerConfig.create(
   githubToken: 'ghp_your_token_here',
 );
 final analyzer = await GithubAnalyzer.create(config: config);
-```
+`
 
 ### 토큰 안전 관리
 
 **모범 사례:**
 
-```dart
-// 1. 환경 변수에서 로드
+`dart
 import 'dart:io';
 
 void main() async {
@@ -681,10 +632,9 @@ void main() async {
     githubToken: token,
   );
 }
-```
+`
 
-```dart
-// 2. 보안 저장소에서 로드 (모바일/데스크톱)
+`dart
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 Future<void> analyze() async {
@@ -696,15 +646,15 @@ Future<void> analyze() async {
     githubToken: token,
   );
 }
-```
+`
 
 ## 📤 출력 형식
 
 ### 간결한 형식 (LLM 친화적)
 
-```dart
+`dart
 final config = MarkdownConfig.compact;
-```
+`
 
 - 최소 포맷팅
 - 통계 없음
@@ -712,9 +662,9 @@ final config = MarkdownConfig.compact;
 
 ### 표준 형식 (균형)
 
-```dart
+`dart
 final config = MarkdownConfig.standard;
-```
+`
 
 - 통계 포함
 - 코드 블록
@@ -722,9 +672,9 @@ final config = MarkdownConfig.standard;
 
 ### 상세 형식 (종합)
 
-```dart
+`dart
 final config = MarkdownConfig.detailed;
-```
+`
 
 - 전체 통계
 - 언어 분포
@@ -742,34 +692,30 @@ final config = MarkdownConfig.detailed;
 
 ## 🛠️ 편의 함수
 
-```dart
-// 빠른 분석 (공개 저장소)
+`dart
 final result = await analyzeQuick('https://github.com/user/repo');
 
-// 빠른 분석 (비공개 저장소)
 final result = await analyzeQuick(
   'https://github.com/user/private-repo',
   githubToken: 'your_token',
 );
 
-// LLM 최적화 분석 + 마크다운 생성
 final outputPath = await analyzeForLLM(
   'https://github.com/user/repo',
-  githubToken: 'your_token', // 공개 저장소는 선택사항
+  githubToken: 'your_token',
   outputDir: './output',
   maxFiles: 100,
 );
 
-// 사용자 정의 설정 분석
 final result = await analyze(
   'https://github.com/user/repo',
   config: await GithubAnalyzerConfig.create(
     githubToken: 'your_token',
   ),
   verbose: true,
-  useCache: false, // 캐시 비활성화
+  useCache: false,
 );
-```
+`
 
 ## 🔍 문제 해결
 
@@ -778,13 +724,7 @@ final result = await analyze(
 **원인:** 누락되었거나 불충분한 GitHub 토큰 권한
 
 **해결책:**
-1. 토큰을 올바르게 전달하는지 확인:
-   ```dart
-   final result = await analyzeQuick(
-     'https://github.com/user/repo',
-     githubToken: 'ghp_your_token_here',
-   );
-   ```
+1. 토큰을 올바르게 전달하는지 확인
 2. Fine-grained 토큰: 저장소 접근 설정 확인
 3. 클래식 토큰: `repo` 범위 활성화 확인
 4. 토큰 테스트: `curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user`
@@ -803,78 +743,43 @@ final result = await analyze(
 **원인:** GitHub API 속도 제한 (토큰 없음: 60 req/hr)
 
 **해결책:**
-- GitHub 토큰을 전달하여 한도 증가 (5,000 req/hr):
-  ```dart
-  final result = await analyzeQuick(
-    'https://github.com/user/repo',
-    githubToken: 'your_token',
-  );
-  ```
+- GitHub 토큰을 전달하여 한도 증가 (5,000 req/hr)
 
 ### useCache: false를 무시하는 캐시
 
 **v0.1.5에서 수정됨:** 캐시가 `useCache` 파라미터를 올바르게 인식합니다.
 
-```dart
-// 이제 캐시를 생성하지 않습니다
+`dart
 final result = await analyzer.analyze(
   'https://github.com/user/repo',
   useCache: false,
 );
-```
+`
 
 ## 📝 예제
 
-`example/` 디렉토리에서 더 많은 예제를 확인하세요:
-
-- `demo.dart` - 성능 메트릭스를 포함한 종합 데모
-- 기본 사용 예제
-- 사용자 정의 설정 예제
+`example/` 디렉토리에서 더 많은 예제를 확인하세요.
 
 ## 🤝 기여하기
 
-기여는 항상 환영합니다! Pull Request를 자유롭게 제출하세요.
-
-### 개발 환경 설정
-
-```bash
-# 저장소 복제
+`bash
 git clone https://github.com/cruxhan/github_analyzer.git
-
-# 의존성 설치
 dart pub get
-
-# 테스트 실행
 dart test
-```
+`
 
 ## 📄 라이선스
 
-MIT License - 자세한 내용은 [LICENSE](LICENSE) 파일 참조
-
-## 🔗 링크
-
-- [pub.dev 패키지](https://pub.dev/packages/github_analyzer)
-- [GitHub 저장소](https://github.com/cruxhan/github_analyzer)
-- [이슈 추적](https://github.com/cruxhan/github_analyzer/issues)
-- [변경 로그](CHANGELOG.md)
+MIT License
 
 ## 💡 사용 팁
 
 1. **대규모 저장소**: `maxFiles` 파라미터로 파일 수 제한
-2. **캐시 관리**: 최신 데이터를 위해 `useCache: false` 사용
-3. **토큰 보안**: 환경 변수 또는 보안 저장소 사용
-4. **성능 최적화**: `enableIsolatePool: true`로 병렬 처리 활성화
+2. **캐시 관리**: `useCache: false`로 최신 데이터 가져오기
+3. **토큰 보안**: 절대 토큰을 하드코딩하지 않기
+4. **성능 최적화**: `enableIsolatePool: true` 활성화
 5. **LLM 토큰 절약**: `MarkdownConfig.compact` 사용
-6. **비공개 저장소**: 항상 `githubToken` 파라미터 명시적 전달
-
-## 🆕 v0.1.5의 새 기능
-
-- ✅ **수정됨:** `useCache: false` 파라미터 캐시 존중
-- ✅ **변경됨:** 보안 강화를 위해 자동 .env 로드 제거
-- ✅ **개선됨:** 파라미터를 통한 명시적 토큰 전달
-- ✅ **수정됨:** HTTP 리다이렉트 지원 추가
 
 ---
 
-**Dart & Flutter 커뮤니티를 위해 ❤️ 으로 만들어졌습니다**
+</details>
