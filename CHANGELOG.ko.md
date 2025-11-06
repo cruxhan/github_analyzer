@@ -5,6 +5,13 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)를 기반으로 하며,
 이 프로젝트는 [의미있는 버전 관리](https://semver.org/spec/v2.0.0.html)를 따릅니다.
 
+## [0.1.9] - 2025-11-06
+
+### 개선
+- **exclude 패턴 대폭 강화** - 플랫폼별 빌드 파일(Android, iOS, Windows, Linux, macOS, Web), 
+  CI/CD 캐시, IDE 설정, 시스템 파일 등을 포함한 포괄적인 제외 패턴 추가로 토큰 소비량을 
+  줄이고 사용자 작성 코드 분석에 집중.
+
 ## [0.1.7] - 2025-11-04
 - **추가된 기능**
 

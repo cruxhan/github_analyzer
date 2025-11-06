@@ -32,7 +32,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  github_analyzer: ^0.1.8
+  github_analyzer: ^0.1.9
 ```
 
 Install:
