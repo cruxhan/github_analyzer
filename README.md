@@ -28,7 +28,7 @@ Add to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
-  github_analyzer: ^0.2.0
+  github_analyzer: ^1.0.0
 ```
 
 Install:
@@ -315,7 +315,7 @@ GitHub 저장소를 분석하고 AI 및 LLM 컨텍스트에 최적화된 마크�
 
 ```yaml
 dependencies:
-  github_analyzer: ^0.2.0
+  github_analyzer: ^1.0.0
 ```
 
 설치:

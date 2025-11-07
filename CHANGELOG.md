@@ -12,6 +12,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2025-11-07
+
+### Added
+- **Improved branch detection** - Automatic fallback to default branches when explicit branch fails
+- **Remote analyzer service refactoring** - Better progress tracking and metadata handling
+
+### Enhanced
+- **Code refactoring** - Reduced codebase by ~40% through duplicate removal
+- **Helper method extraction** - Added utility methods for common operations across services
+- **Error handling consolidation** - Unified exception handling patterns
+- **Validation logic integration** - Centralized parameter validation in config service
+- **Method separation** - Improved code organization in LocalAnalyzerService
+
+### Fixed
+- **Type casting issue** - Fixed List<dynamic> to List<String> conversion in directory tree generation
+- **Isolate pool serialization** - Improved error handling for function serialization failures
+
+### Optimized
+- **Cache service** - New helper methods for file operations (_fileExists, _isNotExpired, _readJsonFile)
+- **IsolatePool** - Extracted message validation and result handling to separate methods
+- **RemoteAnalyzerService** - Extracted URL building and exception creation to helpers
+- **MarkdownService** - Streamlined content generation pipeline
+
+### Documentation
+- **All comments** - Converted to English with Dart doc style formatting
+- **Public APIs** - Added comprehensive documentation for all core services
+
+
 ## [0.1.9] - 2025-11-06
 
 ### Enhanced
@@ -287,6 +315,34 @@ final result = await analyzer.analyzeRemote(
 
 형식은 [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)를 기반으로 하며,
 이 프로젝트는 [의미있는 버전 관리](https://semver.org/spec/v2.0.0.html)를 따릅니다.
+
+## [1.0.0] - 2025-11-07
+
+### 추가 기능
+- **향상된 브런치 감지** - 명시적 브런치 실패 시 기본 브런치로 자동 폴백
+- **원격 분석 서비스 리팩토링** - 향상된 진행률 추적 및 메타데이터 처리
+
+### 개선 사항
+- **코드 리팩토링** - 중복 제거를 통해 코드베이스 약 40% 축소
+- **헬퍼 메서드 추출** - 서비스 전반에서 공통 작업을 위한 유틸리티 메서드 추가
+- **에러 처리 통합** - 예외 처리 패턴 통일
+- **검증 로직 통합** - 설정 서비스에서 파라미터 검증 중앙화
+- **메서드 분리** - LocalAnalyzerService의 코드 조직 개선
+
+### 버그 수정
+- **타입 캐스팅 문제** - 디렉토리 트리 생성에서 List<dynamic>을 List<String>으로 변환하는 문제 수정
+- **Isolate 풀 직렬화** - 함수 직렬화 실패 시 에러 처리 개선
+
+### 최적화
+- **캐시 서비스** - 파일 작업을 위한 새로운 헬퍼 메서드 추가 (_fileExists, _isNotExpired, _readJsonFile)
+- **IsolatePool** - 메시지 검증 및 결과 처리를 별도 메서드로 추출
+- **RemoteAnalyzerService** - URL 빌드 및 예외 생성을 헬퍼로 추출
+- **MarkdownService** - 콘텐츠 생성 파이프라인 간소화
+
+### 문서화
+- **모든 주석** - Dart doc 스타일 형식으로 영문으로 변환
+- **공개 API** - 모든 핵심 서비스에 대한 포괄적인 문서화 추가
+
 
 ## [0.1.9] - 2025-11-06
 
