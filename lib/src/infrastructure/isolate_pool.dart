@@ -1,17 +1,21 @@
 import 'dart:isolate';
 import 'package:github_analyzer/src/common/logger.dart';
 
-/// Manages a pool of isolates to perform tasks in parallel.
+/// Manages a pool of isolates for parallel task execution.
+///
+/// Distributes tasks across spawned isolates using round-robin scheduling.
+/// All tasks must be top-level or static functions due to isolate serialization.
 class IsolatePool {
   final int size;
   final List<_IsolateWorker> _workers = [];
   int _currentWorkerIndex = 0;
   bool _isInitialized = false;
 
-  /// Creates an instance of [IsolatePool].
   IsolatePool({required this.size});
 
-  /// Initializes the isolate pool by spawning the configured number of workers.
+  /// Initializes the isolate pool by spawning configured workers.
+  ///
+  /// Throws [StateError] if already initialized.
   Future<void> initialize() async {
     if (_isInitialized) return;
 
@@ -26,28 +30,27 @@ class IsolatePool {
     logger.info('Isolate pool initialized');
   }
 
-  /// Executes a task on the next available isolate in the pool.
+  /// Executes a task on the next isolate using round-robin scheduling.
   ///
-  /// **Important**: The [task] function must be a top-level or static function,
-  /// not a closure or instance method, because it will be sent to another isolate.
+  /// [task] must be a top-level or static function, not a closure.
+  /// Throws [StateError] if pool not initialized.
   Future<R> execute<T, R>(Future<R> Function(T) task, T argument) async {
-    if (!_isInitialized) {
-      throw StateError('IsolatePool not initialized. Call initialize() first.');
-    }
+    _checkInitialized();
 
     final worker = _workers[_currentWorkerIndex];
     _currentWorkerIndex = (_currentWorkerIndex + 1) % _workers.length;
     return await worker.execute<T, R>(task, argument);
   }
 
-  /// Executes a list of tasks distributed across the isolate pool.
+  /// Executes multiple tasks distributed across the isolate pool.
+  ///
+  /// Uses round-robin to distribute [arguments] across available workers.
+  /// All [task] function must be top-level or static functions.
   Future<List<R>> executeAll<T, R>(
     Future<R> Function(T) task,
     List<T> arguments,
   ) async {
-    if (!_isInitialized) {
-      throw StateError('IsolatePool not initialized. Call initialize() first.');
-    }
+    _checkInitialized();
 
     final futures = <Future<R>>[];
     for (int i = 0; i < arguments.length; i++) {
@@ -58,7 +61,7 @@ class IsolatePool {
     return await Future.wait<R>(futures);
   }
 
-  /// Disposes the isolate pool by terminating all worker isolates.
+  /// Terminates all worker isolates and releases resources.
   Future<void> dispose() async {
     if (!_isInitialized) return;
 
@@ -71,9 +74,16 @@ class IsolatePool {
     _isInitialized = false;
     logger.info('Isolate pool disposed');
   }
+
+  /// Checks if pool is initialized, throws if not.
+  void _checkInitialized() {
+    if (!_isInitialized) {
+      throw StateError('IsolatePool not initialized. Call initialize() first.');
+    }
+  }
 }
 
-/// Internal worker class that manages a single isolate.
+/// Internal worker managing a single isolate instance.
 class _IsolateWorker {
   final int id;
   Isolate? _isolate;
@@ -83,6 +93,8 @@ class _IsolateWorker {
   _IsolateWorker({required this.id});
 
   /// Spawns a new isolate for this worker.
+  ///
+  /// Throws [StateError] if initial handshake fails.
   Future<void> spawn() async {
     logger.fine('Spawning isolate worker $id');
     _isolate = await Isolate.spawn(_isolateEntryPoint, _receivePort.sendPort);
@@ -100,13 +112,8 @@ class _IsolateWorker {
 
   /// Executes a task on this worker's isolate.
   ///
-  /// **CRITICAL**: This attempts to send a function to another isolate.
-  /// Dart isolates cannot share functions directly - they must be
-  /// top-level or static functions. This will throw a runtime error
-  /// if the function is a closure or instance method.
-  ///
-  /// This is a known limitation and why parallel processing is disabled
-  /// by default in the analyzer.
+  /// [task] must be a top-level or static function (isolate serialization limitation).
+  /// Returns result or throws [IsolateSpawnException] for serialization errors.
   Future<R> execute<T, R>(Future<R> Function(T) task, T argument) async {
     if (_sendPort == null) {
       throw StateError('Isolate not spawned');
@@ -115,7 +122,6 @@ class _IsolateWorker {
     final responsePort = ReceivePort();
 
     try {
-      // ⚠️ This will fail if task is not a top-level/static function
       _sendPort!.send([task, argument, responsePort.sendPort]);
     } catch (e) {
       responsePort.close();
@@ -129,12 +135,18 @@ class _IsolateWorker {
     final result = await responsePort.first;
     responsePort.close();
 
+    return _handleResult<R>(result);
+  }
+
+  /// Handles isolate response and converts to proper type.
+  ///
+  /// Returns result, throws on error or type mismatch.
+  R _handleResult<R>(dynamic result) {
     if (result is _IsolateError) {
       throw Exception('Isolate error: ${result.message}\n${result.stackTrace}');
     }
 
     if (result is! R) {
-      // Allow null for nullable types
       if (result == null && null is R) {
         return result as R;
       }
@@ -153,36 +165,23 @@ class _IsolateWorker {
 
   /// Entry point for spawned isolates.
   ///
-  /// This function runs in the spawned isolate and listens for tasks.
+  /// Receives tasks from main isolate, executes them, and sends results back.
   static void _isolateEntryPoint(SendPort sendPort) {
     final receivePort = ReceivePort();
     sendPort.send(receivePort.sendPort);
 
     receivePort.listen((dynamic message) async {
-      // Validate message format
-      if (message is! List || message.length != 3) {
-        logger.severe('Invalid message format received in isolate');
-        return;
-      }
+      if (!_validateMessage(message)) return;
 
-      // Extract components without type casting the function yet
       final taskDynamic = message[0];
       final argument = message[1];
-      final responsePort = message[2];
-
-      if (responsePort is! SendPort) {
-        logger.severe('Response port is not a SendPort');
-        return;
-      }
+      final responsePort = message[2] as SendPort;
 
       try {
-        // Attempt to cast and execute the function
-        // This will fail at runtime if the function wasn't serializable
         final task = taskDynamic as Future<dynamic> Function(dynamic);
         final result = await task(argument);
         responsePort.send(result);
       } catch (e, stackTrace) {
-        // Send error back to main isolate
         responsePort.send(
           _IsolateError(
             message: e.toString(),
@@ -191,6 +190,21 @@ class _IsolateWorker {
         );
       }
     });
+  }
+
+  /// Validates message format from main isolate.
+  static bool _validateMessage(dynamic message) {
+    if (message is! List || message.length != 3) {
+      logger.severe('Invalid message format in isolate');
+      return false;
+    }
+
+    if (message[2] is! SendPort) {
+      logger.severe('Response port is not a SendPort');
+      return false;
+    }
+
+    return true;
   }
 }
 
@@ -205,7 +219,7 @@ class _IsolateError {
   String toString() => 'IsolateError: $message\n$stackTrace';
 }
 
-/// Exception thrown when isolate spawn fails.
+/// Exception thrown when isolate function serialization fails.
 class IsolateSpawnException implements Exception {
   final String message;
 

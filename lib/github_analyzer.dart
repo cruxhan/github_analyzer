@@ -75,6 +75,8 @@ export 'src/services/markdown_service.dart';
 ///
 /// - [repositoryUrl]: The GitHub repository URL (e.g., 'https://github.com/user/repo')
 ///   or a local directory path.
+/// - [branch]: Optional specific branch to analyze for remote repositories. If not
+///   provided, uses the repository's default branch.
 /// - [config]: Optional analyzer configuration. If not provided, default settings
 ///   will be used.
 /// - [progressCallback]: Optional callback to receive real-time progress updates
@@ -102,6 +104,12 @@ export 'src/services/markdown_service.dart';
 /// print('Total files: ${result.files.length}');
 /// print('Total lines: ${result.statistics.totalLines}');
 ///
+/// // Analysis with specific branch
+/// final result = await analyze(
+///   'https://github.com/user/repo',
+///   branch: 'develop',
+/// );
+///
 /// // Analysis with custom configuration
 /// final customConfig = await GithubAnalyzerConfig.create(
 ///   githubToken: 'your-token',
@@ -111,6 +119,7 @@ export 'src/services/markdown_service.dart';
 ///
 /// final result = await analyze(
 ///   'https://github.com/user/private-repo',
+///   branch: 'main',
 ///   config: customConfig,
 ///   verbose: true,
 /// );
@@ -136,6 +145,7 @@ export 'src/services/markdown_service.dart';
 /// - [analyzeForLLM] for LLM-optimized analysis
 Future<AnalysisResult> analyze(
   String repositoryUrl, {
+  String? branch,
   GithubAnalyzerConfig? config,
   void Function(AnalysisProgress)? progressCallback,
   bool verbose = false,
@@ -154,7 +164,11 @@ Future<AnalysisResult> analyze(
   }
 
   try {
-    return await analyzer.analyze(repositoryUrl, useCache: useCache);
+    return await analyzer.analyze(
+      repositoryUrl,
+      branch: branch,
+      useCache: useCache,
+    );
   } finally {
     await progressSubscription?.cancel();
     await analyzer.dispose();
@@ -169,6 +183,7 @@ Future<AnalysisResult> analyze(
 /// ## Parameters
 ///
 /// - [repositoryUrl]: The GitHub repository URL or local directory path.
+/// - [branch]: Optional specific branch to analyze for remote repositories.
 /// - [outputPath]: Optional specific file path for the output. If not provided,
 ///   the file will be saved in [outputDir] with an auto-generated name.
 /// - [outputDir]: Directory where the markdown file should be saved. Defaults to
@@ -196,6 +211,13 @@ Future<AnalysisResult> analyze(
 /// );
 /// print('Documentation saved to: $outputPath');
 ///
+/// // With specific branch
+/// final outputPath = await analyzeAndGenerate(
+///   'https://github.com/user/repo',
+///   branch: 'develop',
+///   outputDir: './docs',
+/// );
+///
 /// // Custom markdown configuration
 /// final customMarkdown = MarkdownConfig(
 ///   includeContent: true,
@@ -206,6 +228,7 @@ Future<AnalysisResult> analyze(
 ///
 /// final outputPath = await analyzeAndGenerate(
 ///   'https://github.com/user/repo',
+///   branch: 'main',
 ///   outputPath: './docs/README.md',
 ///   markdownConfig: customMarkdown,
 /// );
@@ -218,6 +241,7 @@ Future<AnalysisResult> analyze(
 ///
 /// final outputPath = await analyzeAndGenerate(
 ///   'https://github.com/user/private-repo',
+///   branch: 'develop',
 ///   outputDir: './output',
 ///   analyzerConfig: analyzerConfig,
 ///   markdownConfig: customMarkdown,
@@ -234,6 +258,7 @@ Future<AnalysisResult> analyze(
 /// - [analyzeForLLM] for LLM-optimized markdown output
 Future<String> analyzeAndGenerate(
   String repositoryUrl, {
+  String? branch,
   String? outputPath,
   String? outputDir,
   GithubAnalyzerConfig? analyzerConfig,
@@ -255,7 +280,11 @@ Future<String> analyzeAndGenerate(
   }
 
   try {
-    final result = await analyzer.analyze(repositoryUrl, useCache: useCache);
+    final result = await analyzer.analyze(
+      repositoryUrl,
+      branch: branch,
+      useCache: useCache,
+    );
 
     // Use context service from DI container
     final contextService = getIt<ContextService>();
@@ -282,6 +311,7 @@ Future<String> analyzeAndGenerate(
 /// ## Parameters
 ///
 /// - [repositoryUrl]: The GitHub repository URL or local directory path.
+/// - [branch]: Optional specific branch to analyze for remote repositories.
 /// - [githubToken]: Optional GitHub personal access token for accessing private
 ///   repositories or increasing API rate limits.
 /// - [progressCallback]: Optional callback for progress updates.
@@ -299,9 +329,16 @@ Future<String> analyzeAndGenerate(
 /// final result = await analyzeQuick('https://github.com/user/repo');
 /// print('Languages: ${result.statistics.languageDistribution.keys.join(", ")}');
 ///
+/// // Quick analysis with specific branch
+/// final result = await analyzeQuick(
+///   'https://github.com/user/repo',
+///   branch: 'develop',
+/// );
+///
 /// // Quick analysis of a private repository
 /// final result = await analyzeQuick(
 ///   'https://github.com/user/private-repo',
+///   branch: 'main',
 ///   githubToken: 'your-github-token',
 /// );
 /// print('Total files: ${result.files.length}');
@@ -332,6 +369,7 @@ Future<String> analyzeAndGenerate(
 /// - [analyzeForLLM] for LLM-optimized output
 Future<AnalysisResult> analyzeQuick(
   String repositoryUrl, {
+  String? branch,
   String? githubToken,
   void Function(AnalysisProgress)? progressCallback,
   bool? useCache,
@@ -350,7 +388,11 @@ Future<AnalysisResult> analyzeQuick(
   }
 
   try {
-    return await analyzer.analyze(repositoryUrl, useCache: useCache);
+    return await analyzer.analyze(
+      repositoryUrl,
+      branch: branch,
+      useCache: useCache,
+    );
   } finally {
     await progressSubscription?.cancel();
     await analyzer.dispose();
@@ -374,6 +416,8 @@ Future<AnalysisResult> analyzeQuick(
 /// ## Parameters
 ///
 /// - [repositoryUrl]: The GitHub repository URL to analyze.
+/// - [branch]: Optional specific branch to analyze. If not provided, uses the
+///   repository's default branch.
 /// - [outputPath]: Optional specific file path for the output markdown file.
 /// - [outputDir]: Directory where the markdown file should be saved.
 /// - [githubToken]: GitHub personal access token for accessing private repositories
@@ -401,9 +445,17 @@ Future<AnalysisResult> analyzeQuick(
 /// );
 /// print('LLM context saved to: $outputPath');
 ///
+/// // Analysis with specific branch
+/// final outputPath = await analyzeForLLM(
+///   'https://github.com/user/repo',
+///   branch: 'develop',
+///   outputDir: './llm-context',
+/// );
+///
 /// // Analysis with GitHub token for private repos
 /// final outputPath = await analyzeForLLM(
 ///   'https://github.com/user/private-repo',
+///   branch: 'main',
 ///   githubToken: 'ghp_your_github_token',
 ///   outputDir: './output',
 /// );
@@ -411,6 +463,7 @@ Future<AnalysisResult> analyzeQuick(
 /// // Custom file limit and output path
 /// final outputPath = await analyzeForLLM(
 ///   'https://github.com/user/large-repo',
+///   branch: 'develop',
 ///   githubToken: 'your-token',
 ///   maxFiles: 100,
 ///   outputPath: './context/repo-summary.md',
@@ -419,6 +472,7 @@ Future<AnalysisResult> analyzeQuick(
 /// // With progress tracking
 /// final outputPath = await analyzeForLLM(
 ///   'https://github.com/user/repo',
+///   branch: 'main',
 ///   githubToken: 'your-token',
 ///   progressCallback: (progress) {
 ///     print('[${progress.phase}] ${progress.message}');
@@ -455,6 +509,7 @@ Future<AnalysisResult> analyzeQuick(
 /// - [analyzeQuick] for fast, minimal analysis
 Future<String> analyzeForLLM(
   String repositoryUrl, {
+  String? branch,
   String? outputPath,
   String? outputDir,
   String? githubToken,
@@ -482,7 +537,11 @@ Future<String> analyzeForLLM(
   }
 
   try {
-    final result = await analyzer.analyze(repositoryUrl, useCache: useCache);
+    final result = await analyzer.analyze(
+      repositoryUrl,
+      branch: branch,
+      useCache: useCache,
+    );
 
     // Use context service from DI container
     final contextService = getIt<ContextService>();

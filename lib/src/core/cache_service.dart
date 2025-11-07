@@ -2,19 +2,26 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:universal_io/io.dart';
 import 'package:github_analyzer/src/common/logger.dart';
-import 'package:github_analyzer/src/common/errors/analyzer_exception.dart';
-import 'package:github_analyzer/src/models/analysis_result.dart';
 import 'package:github_analyzer/src/models/source_file.dart';
+import 'package:github_analyzer/src/models/analysis_result.dart';
+import 'package:github_analyzer/src/common/errors/analyzer_exception.dart';
 
-/// Manages caching of analysis results to avoid redundant computations
+/// Manages caching of analysis results and individual files to disk.
+///
+/// Provides both repository-level and file-level caching with optional
+/// expiration. Uses SHA256 hashing for cache keys to ensure uniqueness.
 class CacheService {
   final String cacheDirectory;
   final Duration? maxAge;
   bool isInitialized = false;
 
+  static const String _fileCacheSubdir = 'files';
+
   CacheService({required this.cacheDirectory, this.maxAge});
 
-  /// Initializes the cache service by creating the cache directory if it doesn't exist
+  /// Initializes the cache service and creates necessary directories.
+  ///
+  /// Throws [AnalyzerException] if directories cannot be created.
   Future<void> initialize() async {
     if (isInitialized) return;
 
@@ -25,8 +32,7 @@ class CacheService {
         logger.info('Cache directory created: $cacheDirectory');
       }
 
-      // Create file-level cache subdirectory
-      final fileCacheDir = Directory('$cacheDirectory/files');
+      final fileCacheDir = Directory('$cacheDirectory/$_fileCacheSubdir');
       if (!await fileCacheDir.exists()) {
         await fileCacheDir.create(recursive: true);
         logger.info('File-level cache directory created');
@@ -34,32 +40,12 @@ class CacheService {
 
       isInitialized = true;
     } on FileSystemException catch (e, stackTrace) {
-      // FileSystemException includes PathAccessException as a subtype
-      logger.severe('Failed to initialize cache directory', e, stackTrace);
-
-      // Check if it's a permission issue specifically
-      final isPermissionError =
-          e.osError?.errorCode == 13 || // Unix: Permission denied
-          e.osError?.errorCode == 5; // Windows: Access denied
-
-      if (isPermissionError) {
-        throw AnalyzerException(
-          'Permission denied',
-          code: AnalyzerErrorCode.cacheError,
-          details:
-              'Cannot access cache directory: ${e.message}\n'
-              'Please check directory permissions.',
-          originalException: e,
-          stackTrace: stackTrace,
-        );
-      }
-
-      throw AnalyzerException(
+      _throwCacheError(
         'Failed to initialize cache service',
-        code: AnalyzerErrorCode.cacheError,
-        details: 'Cannot create cache directory: ${e.message}',
-        originalException: e,
-        stackTrace: stackTrace,
+        'Cannot create cache directory: ${e.message}',
+        e,
+        stackTrace,
+        _isPermissionError(e),
       );
     } catch (e, stackTrace) {
       logger.severe('Unexpected error initializing cache', e, stackTrace);
@@ -73,221 +59,108 @@ class CacheService {
     }
   }
 
-  /// Generates a cache key from repository URL and commit hash
+  /// Generates a SHA256 hash cache key from repository URL and commit hash.
   String _generateCacheKey(String repositoryUrl, String commitHash) {
     final input = '$repositoryUrl:$commitHash';
     return sha256.convert(utf8.encode(input)).toString();
   }
 
-  /// Generates a cache key for individual file
+  /// Generates a SHA256 hash cache key for individual file.
   String _generateFileCacheKey(String filePath, String contentHash) {
     final input = '$filePath:$contentHash';
     return sha256.convert(utf8.encode(input)).toString();
   }
 
-  /// Retrieves a cached AnalysisResult if available and not expired
+  /// Retrieves a cached analysis result if available and not expired.
+  ///
+  /// Returns null if cache miss, expired, or corrupted (corrupted cache is deleted).
   Future<AnalysisResult?> get(String repositoryUrl, String commitHash) async {
-    if (!isInitialized) {
-      throw AnalyzerException(
-        'CacheService not initialized',
-        code: AnalyzerErrorCode.cacheError,
-      );
-    }
+    _checkInitialized();
 
     final key = _generateCacheKey(repositoryUrl, commitHash);
     final cacheFile = File('$cacheDirectory/$key.json');
 
-    try {
-      if (!await cacheFile.exists()) {
-        logger.fine('Cache miss for $repositoryUrl (commit: $commitHash)');
-        return null;
-      }
-    } on FileSystemException catch (e, stackTrace) {
-      logger.warning('Error checking cache file existence', e, stackTrace);
+    if (!await _fileExists(cacheFile)) {
+      logger.fine('Cache miss for $repositoryUrl (commit: $commitHash)');
       return null;
     }
 
-    // Check if cache is expired
-    if (maxAge != null) {
-      try {
-        final stat = await cacheFile.stat();
-        final age = DateTime.now().difference(stat.modified);
-        if (age > maxAge!) {
-          logger.info('Cache expired for $repositoryUrl. Deleting.');
-          await delete(repositoryUrl, commitHash);
-          return null;
-        }
-      } on FileSystemException catch (e, stackTrace) {
-        logger.warning('Error checking cache file age', e, stackTrace);
-        // Continue to try reading the file
-      }
+    if (!await _isNotExpired(cacheFile, key)) {
+      await delete(repositoryUrl, commitHash);
+      return null;
     }
 
-    // Read and parse cache file
-    try {
-      final content = await cacheFile.readAsString();
-      final json = jsonDecode(content) as Map<String, dynamic>;
-      logger.info('Cache hit for $repositoryUrl (commit: $commitHash)');
-      return AnalysisResult.fromJson(json);
-    } on FileSystemException catch (e, stackTrace) {
-      logger.warning(
-        'File system error reading cache file for $key. Deleting.',
-        e,
-        stackTrace,
-      );
-      await delete(repositoryUrl, commitHash);
-      return null;
-    } on FormatException catch (e, stackTrace) {
-      logger.warning(
-        'JSON parse error for cache file $key. Deleting. Error: $e',
-        e,
-        stackTrace,
-      );
-      await delete(repositoryUrl, commitHash);
-      return null;
-    } on TypeError catch (e, stackTrace) {
-      logger.warning(
-        'Type error deserializing cache for $key. Deleting.',
-        e,
-        stackTrace,
-      );
-      await delete(repositoryUrl, commitHash);
-      return null;
-    } catch (e, stackTrace) {
-      logger.warning(
-        'Failed to read or parse cache file for $key. Deleting. Error: $e',
-        e,
-        stackTrace,
-      );
-      await delete(repositoryUrl, commitHash);
-      return null;
-    }
+    return await _readJsonFile<AnalysisResult>(
+      cacheFile,
+      key,
+      (json) => AnalysisResult.fromJson(json),
+      () => delete(repositoryUrl, commitHash),
+    );
   }
 
-  /// Saves an AnalysisResult to the cache
+  /// Saves an analysis result to cache.
+  ///
+  /// Throws [AnalyzerException] if write fails.
   Future<void> set(
     String repositoryUrl,
     String commitHash,
     AnalysisResult result,
   ) async {
-    if (!isInitialized) {
-      throw AnalyzerException(
-        'CacheService not initialized',
-        code: AnalyzerErrorCode.cacheError,
-      );
-    }
+    _checkInitialized();
 
     final key = _generateCacheKey(repositoryUrl, commitHash);
     final cacheFile = File('$cacheDirectory/$key.json');
 
-    try {
-      final json = jsonEncode(result.toJson());
-      await cacheFile.writeAsString(json);
-      logger.info('Saved cache for $repositoryUrl (commit: $commitHash)');
-    } on FileSystemException catch (e, stackTrace) {
-      logger.severe('File system error writing cache for $key', e, stackTrace);
-      throw AnalyzerException(
-        'Failed to write to cache',
-        code: AnalyzerErrorCode.cacheError,
-        details: 'File system error: ${e.message}',
-        originalException: e,
-        stackTrace: stackTrace,
-      );
-    } on JsonUnsupportedObjectError catch (e, stackTrace) {
-      logger.severe('JSON serialization error for cache $key', e, stackTrace);
-      throw AnalyzerException(
-        'Failed to serialize analysis result',
-        code: AnalyzerErrorCode.cacheError,
-        details: 'Cannot serialize object: ${e.cause}',
-        originalException: e,
-        stackTrace: stackTrace,
-      );
-    } catch (e, stackTrace) {
-      logger.severe('Failed to write cache for $key', e, stackTrace);
-      throw AnalyzerException(
-        'Failed to write to cache',
-        code: AnalyzerErrorCode.cacheError,
-        details: e.toString(),
-        originalException: e,
-        stackTrace: stackTrace,
-      );
-    }
+    await _writeJsonFile(
+      cacheFile,
+      key,
+      result.toJson(),
+      'Failed to write to cache',
+      'repository analysis',
+    );
+
+    logger.info('Saved cache for $repositoryUrl (commit: $commitHash)');
   }
 
-  /// Retrieves a cached file analysis if available
+  /// Retrieves a cached file analysis if available and not expired.
+  ///
+  /// Returns null on cache miss or corruption (corrupted cache is deleted).
   Future<SourceFile?> getFile(String filePath, String contentHash) async {
-    if (!isInitialized) {
-      throw AnalyzerException(
-        'CacheService not initialized',
-        code: AnalyzerErrorCode.cacheError,
-      );
-    }
+    _checkInitialized();
 
     final key = _generateFileCacheKey(filePath, contentHash);
-    final cacheFile = File('$cacheDirectory/files/$key.json');
+    final cacheFile = File('$cacheDirectory/$_fileCacheSubdir/$key.json');
 
-    try {
-      if (!await cacheFile.exists()) {
-        logger.fine('File cache miss for $filePath');
-        return null;
-      }
-
-      if (maxAge != null) {
-        final stat = await cacheFile.stat();
-        final age = DateTime.now().difference(stat.modified);
-        if (age > maxAge!) {
-          logger.fine('File cache expired for $filePath. Deleting.');
-          await deleteFile(filePath, contentHash);
-          return null;
-        }
-      }
-
-      final content = await cacheFile.readAsString();
-      final json = jsonDecode(content) as Map<String, dynamic>;
-      logger.fine('File cache hit for $filePath');
-      return SourceFile.fromJson(json);
-    } on FileSystemException catch (e, stackTrace) {
-      logger.warning(
-        'File system error reading file cache for $key. Deleting.',
-        e,
-        stackTrace,
-      );
-      await deleteFile(filePath, contentHash);
+    if (!await _fileExists(cacheFile)) {
+      logger.fine('File cache miss for $filePath');
       return null;
-    } on FormatException catch (e, stackTrace) {
-      logger.warning(
-        'JSON parse error for file cache $key. Deleting.',
-        e,
-        stackTrace,
-      );
-      await deleteFile(filePath, contentHash);
-      return null;
-    } catch (e, stackTrace) {
-      logger.warning(
-        'Failed to read or parse file cache for $key. Deleting. Error: $e',
-        e,
-        stackTrace,
-      );
+    }
+
+    if (!await _isNotExpired(cacheFile, key)) {
       await deleteFile(filePath, contentHash);
       return null;
     }
+
+    return await _readJsonFile<SourceFile>(
+      cacheFile,
+      key,
+      (json) => SourceFile.fromJson(json),
+      () => deleteFile(filePath, contentHash),
+    );
   }
 
-  /// Saves a file analysis to the cache
+  /// Saves a file analysis to cache.
+  ///
+  /// Failures are logged but not thrown to prevent file analysis failure.
   Future<void> setFile(
     String filePath,
     String contentHash,
     SourceFile sourceFile,
   ) async {
-    if (!isInitialized) {
-      throw AnalyzerException(
-        'CacheService not initialized',
-        code: AnalyzerErrorCode.cacheError,
-      );
-    }
+    _checkInitialized();
 
     final key = _generateFileCacheKey(filePath, contentHash);
-    final cacheFile = File('$cacheDirectory/files/$key.json');
+    final cacheFile = File('$cacheDirectory/$_fileCacheSubdir/$key.json');
 
     try {
       final json = jsonEncode(sourceFile.toJson());
@@ -299,21 +172,20 @@ class CacheService {
         e,
         stackTrace,
       );
-      // Don't throw - file-level cache failures shouldn't break analysis
     } on JsonUnsupportedObjectError catch (e, stackTrace) {
       logger.warning(
         'JSON serialization error for file cache $key',
         e,
         stackTrace,
       );
-      // Don't throw
     } catch (e, stackTrace) {
       logger.warning('Failed to write file cache for $key', e, stackTrace);
-      // Don't throw - file-level cache failures shouldn't break analysis
     }
   }
 
-  /// Retrieves multiple files from cache
+  /// Retrieves multiple files from cache.
+  ///
+  /// Returns map of successfully cached files. Errors are logged and skipped.
   Future<Map<String, SourceFile>> getFiles(
     Map<String, String> filePathsToHashes,
   ) async {
@@ -326,7 +198,6 @@ class CacheService {
           cachedFiles[entry.key] = cached;
         }
       } catch (e) {
-        // Skip this file if error occurs
         logger.fine('Error loading file from cache: ${entry.key}');
       }
     }
@@ -338,7 +209,9 @@ class CacheService {
     return cachedFiles;
   }
 
-  /// Saves multiple files to cache
+  /// Saves multiple files to cache.
+  ///
+  /// Continues saving remaining files even if individual saves fail.
   Future<void> setFiles(
     Map<String, String> filePathsToHashes,
     Map<String, SourceFile> sourceFiles,
@@ -352,7 +225,6 @@ class CacheService {
           await setFile(entry.key, contentHash, entry.value);
           savedCount++;
         } catch (e) {
-          // Continue saving other files even if one fails
           logger.fine('Error saving file to cache: ${entry.key}');
         }
       }
@@ -363,39 +235,25 @@ class CacheService {
     }
   }
 
-  /// Deletes a specific entry from the cache
+  /// Deletes a specific repository cache entry.
   Future<void> delete(String repositoryUrl, String commitHash) async {
     final key = _generateCacheKey(repositoryUrl, commitHash);
     final cacheFile = File('$cacheDirectory/$key.json');
 
-    try {
-      if (await cacheFile.exists()) {
-        await cacheFile.delete();
-        logger.info('Deleted cache for $key');
-      }
-    } on FileSystemException catch (e, stackTrace) {
-      logger.warning('Error deleting cache file $key', e, stackTrace);
-      // Don't throw - deletion failure is not critical
-    }
+    await _safeDelete(cacheFile, key, 'repository');
   }
 
-  /// Deletes a specific file cache entry
+  /// Deletes a specific file cache entry.
   Future<void> deleteFile(String filePath, String contentHash) async {
     final key = _generateFileCacheKey(filePath, contentHash);
-    final cacheFile = File('$cacheDirectory/files/$key.json');
+    final cacheFile = File('$cacheDirectory/$_fileCacheSubdir/$key.json');
 
-    try {
-      if (await cacheFile.exists()) {
-        await cacheFile.delete();
-        logger.fine('Deleted file cache for $key');
-      }
-    } on FileSystemException catch (e, stackTrace) {
-      logger.warning('Error deleting file cache $key', e, stackTrace);
-      // Don't throw
-    }
+    await _safeDelete(cacheFile, key, 'file');
   }
 
-  /// Clears the entire cache directory
+  /// Clears all cache entries (both repository and file-level).
+  ///
+  /// Throws [AnalyzerException] if clearing fails.
   Future<void> clear() async {
     final dir = Directory(cacheDirectory);
 
@@ -408,10 +266,9 @@ class CacheService {
             logger.warning(
               'Error deleting cache entry: ${entity.path} - ${e.message}',
             );
-            // Continue deleting other entries
           }
         }
-        logger.info('Cache directory cleared.');
+        logger.info('Cache directory cleared');
       }
     } on FileSystemException catch (e, stackTrace) {
       logger.severe('Error clearing cache directory', e, stackTrace);
@@ -425,9 +282,9 @@ class CacheService {
     }
   }
 
-  /// Clears only file-level cache
+  /// Clears only file-level cache, not repository cache.
   Future<void> clearFileCache() async {
-    final dir = Directory('$cacheDirectory/files');
+    final dir = Directory('$cacheDirectory/$_fileCacheSubdir');
 
     try {
       if (await dir.exists()) {
@@ -438,29 +295,22 @@ class CacheService {
             logger.warning(
               'Error deleting file cache entry: ${entity.path} - ${e.message}',
             );
-            // Continue deleting other entries
           }
         }
-        logger.info('File-level cache cleared.');
+        logger.info('File-level cache cleared');
       }
     } on FileSystemException catch (e, stackTrace) {
       logger.warning('Error clearing file cache directory', e, stackTrace);
-      // Don't throw - not critical
     }
   }
 
-  /// Gets statistics about the cache
+  /// Returns cache statistics including size and entry counts.
   Future<Map<String, dynamic>> getStatistics() async {
     final dir = Directory(cacheDirectory);
 
     try {
       if (!await dir.exists()) {
-        return {
-          'totalFiles': 0,
-          'totalSize': 0,
-          'fileLevelCacheCount': 0,
-          'fileLevelCacheSize': 0,
-        };
+        return _emptyStatistics();
       }
 
       int totalFiles = 0;
@@ -475,8 +325,7 @@ class CacheService {
             totalFiles++;
             totalSize += size;
 
-            // Check if it's a file-level cache
-            if (entity.path.contains('/files/')) {
+            if (entity.path.contains('/$_fileCacheSubdir/')) {
               fileLevelCacheCount++;
               fileLevelCacheSize += size;
             }
@@ -484,7 +333,6 @@ class CacheService {
             logger.fine(
               'Error getting file size: ${entity.path} - ${e.message}',
             );
-            // Continue counting other files
           }
         }
       }
@@ -497,12 +345,181 @@ class CacheService {
       };
     } on FileSystemException catch (e, stackTrace) {
       logger.warning('Error getting cache statistics', e, stackTrace);
-      return {
-        'totalFiles': 0,
-        'totalSize': 0,
-        'fileLevelCacheCount': 0,
-        'fileLevelCacheSize': 0,
-      };
+      return _emptyStatistics();
+    }
+  }
+
+  /// Checks if file exists, handling filesystem exceptions.
+  Future<bool> _fileExists(File file) async {
+    try {
+      return await file.exists();
+    } on FileSystemException catch (e, stackTrace) {
+      logger.warning('Error checking file existence', e, stackTrace);
+      return false;
+    }
+  }
+
+  /// Checks if cache entry is not expired.
+  Future<bool> _isNotExpired(File cacheFile, String key) async {
+    if (maxAge == null) return true;
+
+    try {
+      final stat = await cacheFile.stat();
+      final age = DateTime.now().difference(stat.modified);
+      if (age > maxAge!) {
+        logger.info('Cache expired for $key. Deleting');
+        return false;
+      }
+      return true;
+    } on FileSystemException catch (e, stackTrace) {
+      logger.warning('Error checking cache age', e, stackTrace);
+      return true;
+    }
+  }
+
+  /// Reads and parses JSON file with error handling.
+  ///
+  /// On corruption, calls [onCorrupted] callback and returns null.
+  Future<T?> _readJsonFile<T>(
+    File cacheFile,
+    String key,
+    T Function(Map<String, dynamic>) parser,
+    Future<void> Function() onCorrupted,
+  ) async {
+    try {
+      final content = await cacheFile.readAsString();
+      final json = jsonDecode(content) as Map<String, dynamic>;
+      return parser(json);
+    } on FileSystemException catch (e, stackTrace) {
+      logger.warning('File system error reading cache for $key', e, stackTrace);
+      await onCorrupted();
+      return null;
+    } on FormatException catch (e, stackTrace) {
+      logger.warning('JSON parse error for cache $key', e, stackTrace);
+      await onCorrupted();
+      return null;
+    } on TypeError catch (e, stackTrace) {
+      logger.warning('Type error deserializing cache $key', e, stackTrace);
+      await onCorrupted();
+      return null;
+    } catch (e, stackTrace) {
+      logger.warning('Failed to read or parse cache $key', e, stackTrace);
+      await onCorrupted();
+      return null;
+    }
+  }
+
+  /// Writes JSON data to file with error handling.
+  ///
+  /// Throws [AnalyzerException] on critical failures.
+  Future<void> _writeJsonFile(
+    File cacheFile,
+    String key,
+    dynamic data,
+    String title,
+    String context,
+  ) async {
+    try {
+      final json = jsonEncode(data);
+      await cacheFile.writeAsString(json);
+    } on FileSystemException catch (e, stackTrace) {
+      logger.severe('File system error writing cache for $key', e, stackTrace);
+      throw AnalyzerException(
+        title,
+        code: AnalyzerErrorCode.cacheError,
+        details: 'File system error: ${e.message}',
+        originalException: e,
+        stackTrace: stackTrace,
+      );
+    } on JsonUnsupportedObjectError catch (e, stackTrace) {
+      logger.severe(
+        'JSON serialization error for $context cache',
+        e,
+        stackTrace,
+      );
+      throw AnalyzerException(
+        'Failed to serialize analysis result',
+        code: AnalyzerErrorCode.cacheError,
+        details: 'Cannot serialize object: ${e.cause}',
+        originalException: e,
+        stackTrace: stackTrace,
+      );
+    } catch (e, stackTrace) {
+      logger.severe('Failed to write cache for $key', e, stackTrace);
+      throw AnalyzerException(
+        title,
+        code: AnalyzerErrorCode.cacheError,
+        details: e.toString(),
+        originalException: e,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Safely deletes a cache file, logging but not throwing errors.
+  Future<void> _safeDelete(File cacheFile, String key, String type) async {
+    try {
+      if (await cacheFile.exists()) {
+        await cacheFile.delete();
+        logger.info('Deleted $type cache for $key');
+      }
+    } on FileSystemException catch (e, stackTrace) {
+      logger.warning('Error deleting $type cache $key', e, stackTrace);
+    }
+  }
+
+  /// Checks if error is a permission error based on OS error code.
+  bool _isPermissionError(FileSystemException e) {
+    return e.osError?.errorCode == 13 || // Unix: Permission denied
+        e.osError?.errorCode == 5; // Windows: Access denied
+  }
+
+  /// Throws cache error with permission-specific message.
+  Never _throwCacheError(
+    String title,
+    String details,
+    FileSystemException e,
+    StackTrace stackTrace,
+    bool isPermissionError,
+  ) {
+    if (isPermissionError) {
+      throw AnalyzerException(
+        'Permission denied',
+        code: AnalyzerErrorCode.cacheError,
+        details:
+            'Cannot access cache directory: ${e.message}\n'
+            'Please check directory permissions.',
+        originalException: e,
+        stackTrace: stackTrace,
+      );
+    }
+
+    throw AnalyzerException(
+      title,
+      code: AnalyzerErrorCode.cacheError,
+      details: details,
+      originalException: e,
+      stackTrace: stackTrace,
+    );
+  }
+
+  /// Returns empty statistics map.
+  Map<String, dynamic> _emptyStatistics() {
+    return {
+      'totalFiles': 0,
+      'totalSize': 0,
+      'fileLevelCacheCount': 0,
+      'fileLevelCacheSize': 0,
+    };
+  }
+
+  /// Checks if service is initialized, throws if not.
+  void _checkInitialized() {
+    if (!isInitialized) {
+      throw AnalyzerException(
+        'CacheService not initialized',
+        code: AnalyzerErrorCode.cacheError,
+      );
     }
   }
 }

@@ -84,8 +84,6 @@ class MarkdownService {
     return buffer.toString();
   }
 
-  // Synchronous helpers for building markdown content
-
   void _writeHeaderSync(StringBuffer buffer, AnalysisResult result) {
     buffer.writeln('# ${result.metadata.name}');
     buffer.writeln();
@@ -133,10 +131,7 @@ class MarkdownService {
     buffer.writeln();
   }
 
-  void _writeDirectoryTreeSync(
-    StringBuffer buffer,
-    AnalysisResult result,
-  ) {
+  void _writeDirectoryTreeSync(StringBuffer buffer, AnalysisResult result) {
     if (result.metadata.directoryTree.isEmpty) return;
     buffer.writeln('## Directory Structure');
     buffer.writeln();
@@ -156,8 +151,8 @@ class MarkdownService {
     final sorted = result.statistics.languageDistribution.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     for (final entry in sorted.take(10)) {
-      final percentage =
-          (entry.value / result.statistics.totalFiles * 100).toStringAsFixed(1);
+      final percentage = (entry.value / result.statistics.totalFiles * 100)
+          .toStringAsFixed(1);
       buffer.writeln('- **${entry.key}:** ${entry.value} files ($percentage%)');
     }
     buffer.writeln();
@@ -173,10 +168,7 @@ class MarkdownService {
     buffer.writeln();
   }
 
-  void _writeDependenciesSync(
-    StringBuffer buffer,
-    AnalysisResult result,
-  ) {
+  void _writeDependenciesSync(StringBuffer buffer, AnalysisResult result) {
     if (result.dependencies.isEmpty) return;
     buffer.writeln('## Dependencies');
     buffer.writeln();
@@ -209,7 +201,8 @@ class MarkdownService {
     buffer.writeln();
     var sourceFiles = result.files
         .where(
-            (f) => f.isSourceCode && f.content != null && f.content!.isNotEmpty)
+          (f) => f.isSourceCode && f.content != null && f.content!.isNotEmpty,
+        )
         .toList();
 
     if (config.minPriority != null) {
@@ -223,7 +216,8 @@ class MarkdownService {
     if (config.maxFiles != null && sourceFiles.length > config.maxFiles!) {
       sourceFiles = sourceFiles.take(config.maxFiles!).toList();
       buffer.writeln(
-          '> **Note:** Showing ${config.maxFiles} of ${result.files.length} files');
+        '> **Note:** Showing ${config.maxFiles} of ${result.files.length} files',
+      );
       buffer.writeln();
     }
 

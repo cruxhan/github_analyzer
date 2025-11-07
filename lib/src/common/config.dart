@@ -1,6 +1,11 @@
 import 'package:github_analyzer/src/common/constants.dart';
 
-/// Configuration class for the GithubAnalyzer
+/// Configuration for repository analyzer behavior and performance tuning.
+///
+/// Controls analysis settings, caching, concurrency, resource limits,
+/// and optimization options. Create instances using factory constructors
+/// like [create], [quick], or [forLLM] for preset configurations.
+
 class GithubAnalyzerConfig {
   final String? githubToken;
   final List<String> excludePatterns;
@@ -18,8 +23,6 @@ class GithubAnalyzerConfig {
   final int maxTotalFiles;
   final bool prioritizeImportantFiles;
   final bool autoLoadEnv;
-
-  // 🆕 추가된 필드들
   final bool enableFileCache;
   final int autoIsolatePoolThreshold;
   final int streamingModeThreshold;
@@ -41,13 +44,14 @@ class GithubAnalyzerConfig {
     this.maxTotalFiles = 0,
     this.prioritizeImportantFiles = true,
     this.autoLoadEnv = true,
-    // 🆕 추가된 기본값들
     this.enableFileCache = true,
     this.autoIsolatePoolThreshold = 100,
-    this.streamingModeThreshold = 50 * 1024 * 1024, // 50MB
+    this.streamingModeThreshold = 50 * 1024 * 1024,
   });
 
-  /// Validates configuration parameters
+  /// Validates all configuration parameters for correctness.
+  ///
+  /// Throws [ArgumentError] if any parameter is invalid.
   static void _validateConfig({
     required int maxFileSize,
     required int maxConcurrentRequests,
@@ -60,138 +64,73 @@ class GithubAnalyzerConfig {
     required int autoIsolatePoolThreshold,
     required int streamingModeThreshold,
   }) {
-    // Validate maxFileSize
-    if (maxFileSize <= 0) {
-      throw ArgumentError.value(
-        maxFileSize,
-        'maxFileSize',
-        'Must be greater than 0',
-      );
-    }
+    _validatePositive(maxFileSize, 'maxFileSize');
+    _validateRange(maxConcurrentRequests, 'maxConcurrentRequests', 1, 20);
+    _validateRange(isolatePoolSize, 'isolatePoolSize', 1, 16);
+    _validateRange(maxRetries, 'maxRetries', 0, 10);
+    _validateNonNegative(retryDelay.inSeconds, 'retryDelay', 60);
+    _validateNonNegative(cacheDuration.inSeconds, 'cacheDuration');
+    _validateNonNegative(maxTotalFiles, 'maxTotalFiles');
+    _validateNonEmpty(cacheDirectory, 'cacheDirectory');
+    _validateNotContains(cacheDirectory, '..', 'cacheDirectory');
+    _validateNonNegative(autoIsolatePoolThreshold, 'autoIsolatePoolThreshold');
+    _validatePositive(streamingModeThreshold, 'streamingModeThreshold');
+  }
 
-    // Validate maxConcurrentRequests
-    if (maxConcurrentRequests <= 0) {
-      throw ArgumentError.value(
-        maxConcurrentRequests,
-        'maxConcurrentRequests',
-        'Must be greater than 0',
-      );
+  /// Validates that value is positive (> 0).
+  static void _validatePositive(int value, String name) {
+    if (value <= 0) {
+      throw ArgumentError.value(value, name, 'Must be greater than 0');
     }
+  }
 
-    if (maxConcurrentRequests > 20) {
-      throw ArgumentError.value(
-        maxConcurrentRequests,
-        'maxConcurrentRequests',
-        'Must be 20 or less to avoid rate limiting',
-      );
+  /// Validates that value is in the specified range [min, max].
+  static void _validateRange(int value, String name, int min, int max) {
+    if (value < min || value > max) {
+      throw ArgumentError.value(value, name, 'Must be between $min and $max');
     }
+  }
 
-    // Validate isolatePoolSize
-    if (isolatePoolSize <= 0) {
-      throw ArgumentError.value(
-        isolatePoolSize,
-        'isolatePoolSize',
-        'Must be greater than 0',
-      );
+  /// Validates that value is non-negative and within max seconds.
+  static void _validateNonNegative(
+    int seconds,
+    String name, [
+    int? maxSeconds,
+  ]) {
+    if (seconds < 0) {
+      throw ArgumentError.value(seconds, name, 'Must not be negative');
     }
-
-    if (isolatePoolSize > 16) {
+    if (maxSeconds != null && seconds > maxSeconds) {
       throw ArgumentError.value(
-        isolatePoolSize,
-        'isolatePoolSize',
-        'Must be 16 or less to avoid excessive resource usage',
-      );
-    }
-
-    // Validate maxRetries
-    if (maxRetries < 0) {
-      throw ArgumentError.value(
-        maxRetries,
-        'maxRetries',
-        'Must be 0 or greater',
-      );
-    }
-
-    if (maxRetries > 10) {
-      throw ArgumentError.value(
-        maxRetries,
-        'maxRetries',
-        'Must be 10 or less to avoid excessive retries',
-      );
-    }
-
-    // Validate retryDelay
-    if (retryDelay.isNegative) {
-      throw ArgumentError.value(
-        retryDelay,
-        'retryDelay',
-        'Must not be negative',
-      );
-    }
-
-    if (retryDelay.inSeconds > 60) {
-      throw ArgumentError.value(
-        retryDelay,
-        'retryDelay',
-        'Must be 60 seconds or less',
-      );
-    }
-
-    // Validate cacheDuration
-    if (cacheDuration.isNegative) {
-      throw ArgumentError.value(
-        cacheDuration,
-        'cacheDuration',
-        'Must not be negative',
-      );
-    }
-
-    // Validate maxTotalFiles
-    if (maxTotalFiles < 0) {
-      throw ArgumentError.value(
-        maxTotalFiles,
-        'maxTotalFiles',
-        'Must be 0 or greater (0 means unlimited)',
-      );
-    }
-
-    // Validate cacheDirectory
-    if (cacheDirectory.isEmpty) {
-      throw ArgumentError.value(
-        cacheDirectory,
-        'cacheDirectory',
-        'Must not be empty',
-      );
-    }
-
-    if (cacheDirectory.contains('..')) {
-      throw ArgumentError.value(
-        cacheDirectory,
-        'cacheDirectory',
-        'Must not contain parent directory references (..)',
-      );
-    }
-
-    // 🆕 Validate autoIsolatePoolThreshold
-    if (autoIsolatePoolThreshold < 0) {
-      throw ArgumentError.value(
-        autoIsolatePoolThreshold,
-        'autoIsolatePoolThreshold',
-        'Must be 0 or greater',
-      );
-    }
-
-    // 🆕 Validate streamingModeThreshold
-    if (streamingModeThreshold <= 0) {
-      throw ArgumentError.value(
-        streamingModeThreshold,
-        'streamingModeThreshold',
-        'Must be greater than 0',
+        seconds,
+        name,
+        'Must be $maxSeconds seconds or less',
       );
     }
   }
 
-  /// Creates a configuration instance (without .env auto-loading)
+  /// Validates that string is not empty.
+  static void _validateNonEmpty(String value, String name) {
+    if (value.isEmpty) {
+      throw ArgumentError.value(value, name, 'Must not be empty');
+    }
+  }
+
+  /// Validates that string does not contain forbidden characters.
+  static void _validateNotContains(
+    String value,
+    String forbidden,
+    String name,
+  ) {
+    if (value.contains(forbidden)) {
+      throw ArgumentError.value(value, name, 'Must not contain "$forbidden"');
+    }
+  }
+
+  /// Creates default configuration with custom parameters.
+  ///
+  /// Validates all parameters and returns a configured instance.
+  /// Use preset factories [quick] or [forLLM] for common configurations.
   static Future<GithubAnalyzerConfig> create({
     String? githubToken,
     List<String>? excludePatterns,
@@ -208,19 +147,14 @@ class GithubAnalyzerConfig {
     bool excludeGeneratedFiles = true,
     int maxTotalFiles = 0,
     bool prioritizeImportantFiles = true,
-    bool autoLoadEnv = true, // ⚠️ Deprecated: kept for backward compatibility
-    // 🆕 추가 파라미터들
+    bool autoLoadEnv = true,
     bool enableFileCache = true,
     int autoIsolatePoolThreshold = 100,
-    int streamingModeThreshold = 50 * 1024 * 1024, // 50MB
+    int streamingModeThreshold = 50 * 1024 * 1024,
   }) async {
-    // ✅ .env 자동 로드 제거 (macOS 샌드박스 이슈)
-    // 사용자가 githubToken 파라미터로 직접 전달해야 함
-
     final size = isolatePoolSize ?? 4;
     final effectiveCacheDir = cacheDirectory ?? '.github_analyzer_cache';
 
-    // Validate configuration
     _validateConfig(
       maxFileSize: maxFileSize,
       maxConcurrentRequests: maxConcurrentRequests,
@@ -235,7 +169,7 @@ class GithubAnalyzerConfig {
     );
 
     return GithubAnalyzerConfig._private(
-      githubToken: githubToken, // ✅ 파라미터로 전달된 값만 사용
+      githubToken: githubToken,
       excludePatterns: excludePatterns ?? kDefaultExcludePatterns,
       includePatterns: includePatterns ?? const [],
       maxFileSize: maxFileSize,
@@ -257,7 +191,7 @@ class GithubAnalyzerConfig {
     );
   }
 
-  /// Synchronous factory (without auto-load)
+  /// Synchronous factory for quick configuration without async overhead.
   factory GithubAnalyzerConfig({
     String? githubToken,
     List<String>? excludePatterns,
@@ -274,17 +208,14 @@ class GithubAnalyzerConfig {
     bool excludeGeneratedFiles = true,
     int maxTotalFiles = 0,
     bool prioritizeImportantFiles = true,
-    bool autoLoadEnv = false, // ⚠️ Deprecated: kept for backward compatibility
-    // 🆕 추가 파라미터들
+    bool autoLoadEnv = false,
     bool enableFileCache = true,
     int autoIsolatePoolThreshold = 100,
     int streamingModeThreshold = 50 * 1024 * 1024,
   }) {
-    // ✅ .env 로드 제거 - githubToken 파라미터만 사용
     final size = isolatePoolSize ?? 4;
     final effectiveCacheDir = cacheDirectory ?? '.github_analyzer_cache';
 
-    // Validate configuration
     _validateConfig(
       maxFileSize: maxFileSize,
       maxConcurrentRequests: maxConcurrentRequests,
@@ -299,7 +230,7 @@ class GithubAnalyzerConfig {
     );
 
     return GithubAnalyzerConfig._private(
-      githubToken: githubToken, // ✅ 파라미터로 전달된 값만 사용
+      githubToken: githubToken,
       excludePatterns: excludePatterns ?? kDefaultExcludePatterns,
       includePatterns: includePatterns ?? const [],
       maxFileSize: maxFileSize,
@@ -321,15 +252,16 @@ class GithubAnalyzerConfig {
     );
   }
 
-  /// Quick analysis factory
+  /// Preset configuration optimized for fast analysis.
+  ///
+  /// Disables caching and parallelization for speed.
+  /// Limits file count to 100.
   static Future<GithubAnalyzerConfig> quick({
     String? githubToken,
     List<String>? excludePatterns,
   }) async {
-    // ✅ .env 자동 로드 제거
-
     return GithubAnalyzerConfig._private(
-      githubToken: githubToken, // ✅ 파라미터로 전달된 값만 사용
+      githubToken: githubToken,
       excludePatterns: excludePatterns ?? kDefaultExcludePatterns,
       includePatterns: const [],
       maxFileSize: kDefaultMaxFileSize,
@@ -351,21 +283,21 @@ class GithubAnalyzerConfig {
     );
   }
 
-  /// LLM-optimized factory
+  /// Preset configuration optimized for LLM context generation.
+  ///
+  /// Enables caching and parallelization with customizable file limit.
+  /// Excludes test and example directories by default.
   static Future<GithubAnalyzerConfig> forLLM({
     String? githubToken,
     List<String>? excludePatterns,
     int maxFiles = 200,
   }) async {
-    // ✅ .env 자동 로드 제거
-
-    // Validate maxFiles
     if (maxFiles < 0) {
       throw ArgumentError.value(maxFiles, 'maxFiles', 'Must be 0 or greater');
     }
 
     return GithubAnalyzerConfig._private(
-      githubToken: githubToken, // ✅ 파라미터로 전달된 값만 사용
+      githubToken: githubToken,
       excludePatterns: [
         ...kDefaultExcludePatterns,
         ...?excludePatterns,
@@ -394,7 +326,7 @@ class GithubAnalyzerConfig {
     );
   }
 
-  /// Get effective exclude patterns including generated files
+  /// Returns effective exclude patterns including generated file patterns.
   List<String> get effectiveExcludePatterns {
     if (!excludeGeneratedFiles) return excludePatterns;
 
@@ -411,12 +343,12 @@ class GithubAnalyzerConfig {
     ];
   }
 
-  /// 🆕 Determine if streaming mode should be used based on archive size
+  /// Determines if streaming mode should be used based on estimated size.
   bool shouldUseStreamingMode({required int estimatedSize}) {
     return estimatedSize >= streamingModeThreshold;
   }
 
-  /// Validates if the current configuration is valid
+  /// Checks if configuration is valid without throwing errors.
   bool get isValid {
     try {
       _validateConfig(

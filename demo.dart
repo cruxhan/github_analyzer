@@ -89,6 +89,7 @@ void printUsage() {
   print('''
 Usage: dart demo.dart [test_name]
 
+
 Available tests:
   local       - Test local directory analysis
   remote      - Test remote repository analysis
@@ -107,6 +108,7 @@ Available tests:
   generate    - Test analyze and generate
   string      - Test generate string
   all         - Run all tests (default)
+
 
 Examples:
   dart demo.dart
@@ -512,21 +514,26 @@ Future<void> testConvenienceFunctions() async {
 
   // Test analyze()
   print('Testing analyze()...');
-  final result1 = await analyzeQuick(
+  final result1 = await analyze(
     'https://github.com/dart-lang/sdk',
+    branch: 'main',
     useCache: false,
   );
   print('✓ analyze() works: ${result1.metadata.name}');
 
   // Test analyzeQuick()
   print('Testing analyzeQuick()...');
-  final result2 = await analyzeQuick('https://github.com/dart-lang/sdk');
+  final result2 = await analyzeQuick(
+    'https://github.com/dart-lang/sdk',
+    branch: 'main',
+  );
   print('✓ analyzeQuick() works: ${result2.statistics.totalFiles} files');
 
   // Test analyzeForLLM()
   print('Testing analyzeForLLM()...');
   final outputPath = await analyzeForLLM(
     'https://github.com/dart-lang/sdk',
+    branch: 'main',
     outputDir: './test_output',
     maxFiles: 50,
   );
@@ -617,6 +624,7 @@ Future<void> testAnalyzeAndGenerate() async {
 
     final outputPath = await analyzeAndGenerate(
       'https://github.com/dart-lang/lints',
+      branch: 'main',
       outputDir: './test_output',
       markdownConfig: MarkdownConfig.compact,
       useCache: false,

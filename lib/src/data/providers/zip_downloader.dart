@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-
 import 'package:dio/dio.dart';
 
 import 'package:github_analyzer/src/common/logger.dart';
@@ -8,8 +7,8 @@ import 'package:github_analyzer/src/infrastructure/interfaces/i_http_client_mana
 
 /// Downloads GitHub repository archives as ZIP files.
 ///
-/// Supports both public and private repositories with automatic
-/// fallback strategy for public repos.
+/// Supports automatic fallback from authenticated API to public URL for
+/// public repositories. Private repositories require a valid token.
 class ZipDownloader {
   final IHttpClientManager httpClientManager;
 
@@ -17,11 +16,9 @@ class ZipDownloader {
 
   /// Downloads repository archive and returns raw bytes.
   ///
-  /// For private repositories ([isPrivate] = true), GitHub API is required
-  /// and fallback to public URL is prevented. For public repos, automatically
-  /// falls back to public URL if API fails.
-  ///
-  /// [ref] can be branch name, tag, or commit SHA.
+  /// First attempts GitHub API if [token] is provided. Falls back to public
+  /// URL for public repositories if API fails. Throws [AnalyzerException] if
+  /// private repository cannot be accessed or no token provided.
   Future<Uint8List> downloadRepositoryAsBytes({
     required String owner,
     required String repo,
@@ -33,10 +30,9 @@ class ZipDownloader {
       'Downloading repository: $owner/$repo@$ref (private: $isPrivate, hasToken: ${token != null && token.isNotEmpty})',
     );
 
-    // Try GitHub API first if token is available
     if (token != null && token.isNotEmpty) {
       try {
-        logger.info('Attempting download via GitHub API...');
+        logger.info('Attempting download via GitHub API');
         return await _downloadViaGitHubAPI(owner, repo, ref, token);
       } on AnalyzerException {
         rethrow;
@@ -47,7 +43,6 @@ class ZipDownloader {
           stackTrace,
         );
 
-        // Prevent fallback for private repositories
         if (isPrivate) {
           logger.severe('Cannot fallback to public URL for private repository');
           throw AnalyzerException(
@@ -67,11 +62,9 @@ class ZipDownloader {
           );
         }
 
-        // Fallback to public URL for public repositories
         logger.info('Falling back to public URL for public repository');
       }
     } else if (isPrivate) {
-      // Cannot access private repos without token
       throw AnalyzerException(
         'Cannot access private repository without token',
         code: AnalyzerErrorCode.accessDenied,
@@ -81,12 +74,14 @@ class ZipDownloader {
       );
     }
 
-    // Fallback: use public GitHub URL (public repos only)
-    logger.info('Attempting download via public URL...');
+    logger.info('Attempting download via public URL');
     return await _downloadViaPublicURL(owner, repo, ref, token);
   }
 
-  /// Downloads via GitHub API (supports private repos, branches, and commit SHAs).
+  /// Downloads via GitHub API endpoint.
+  ///
+  /// Supports authenticated access to both public and private repositories
+  /// with branches, tags, and commit SHAs.
   Future<Uint8List> _downloadViaGitHubAPI(
     String owner,
     String repo,
@@ -115,16 +110,7 @@ class ZipDownloader {
         'Repository downloaded via GitHub API successfully (${response.data.length} bytes)',
       );
 
-      final data = response.data;
-      if (data is! List<int>) {
-        throw AnalyzerException(
-          'Invalid response data type from GitHub API',
-          code: AnalyzerErrorCode.analysisError,
-          details: 'Expected List<int>, got ${data.runtimeType}',
-        );
-      }
-
-      return Uint8List.fromList(data);
+      return _validateAndConvertResponse(response.data);
     } on DioException catch (e, stackTrace) {
       logger.severe('DioException details:', e, stackTrace);
       logger.severe('Response status: ${e.response?.statusCode}');
@@ -144,22 +130,17 @@ class ZipDownloader {
     }
   }
 
-  /// Downloads via public GitHub URL (branch-based or commit SHA URL).
+  /// Downloads via public GitHub URL.
+  ///
+  /// Uses different URL formats for commit SHAs versus branch/tag names.
+  /// Falls back to this method when API fails for public repositories.
   Future<Uint8List> _downloadViaPublicURL(
     String owner,
     String repo,
     String ref,
     String? token,
   ) async {
-    // Different URL formats for commit SHAs vs branches
-    final isCommitSha = RegExp(r'^[0-9a-f]{40}$').hasMatch(ref);
-    final String url;
-    if (isCommitSha) {
-      url = 'https://github.com/$owner/$repo/archive/$ref.zip';
-    } else {
-      url = 'https://github.com/$owner/$repo/archive/refs/heads/$ref.zip';
-    }
-
+    final url = _buildPublicUrl(owner, repo, ref);
     final uri = Uri.parse(url);
     final headers = {
       'Accept': 'application/zip',
@@ -177,16 +158,7 @@ class ZipDownloader {
         'Repository downloaded via public URL successfully (${response.data.length} bytes)',
       );
 
-      final data = response.data;
-      if (data is! List<int>) {
-        throw AnalyzerException(
-          'Invalid response data type from public URL',
-          code: AnalyzerErrorCode.analysisError,
-          details: 'Expected List<int>, got ${data.runtimeType}',
-        );
-      }
-
-      return Uint8List.fromList(data);
+      return _validateAndConvertResponse(response.data);
     } on DioException catch (e, stackTrace) {
       return _handleDioException(e, stackTrace, owner, repo, ref, 'public URL');
     } on TypeError catch (e, stackTrace) {
@@ -211,7 +183,33 @@ class ZipDownloader {
     }
   }
 
+  /// Builds the appropriate public GitHub URL based on reference type.
+  ///
+  /// Uses direct archive URL for commit SHAs, refs/heads path for branches.
+  String _buildPublicUrl(String owner, String repo, String ref) {
+    final isCommitSha = RegExp(r'^[0-9a-f]{40}$').hasMatch(ref);
+    if (isCommitSha) {
+      return 'https://github.com/$owner/$repo/archive/$ref.zip';
+    } else {
+      return 'https://github.com/$owner/$repo/archive/refs/heads/$ref.zip';
+    }
+  }
+
+  /// Validates response data and converts to Uint8List.
+  Uint8List _validateAndConvertResponse(dynamic data) {
+    if (data is! List<int>) {
+      throw AnalyzerException(
+        'Invalid response data type',
+        code: AnalyzerErrorCode.analysisError,
+        details: 'Expected List<int>, got ${data.runtimeType}',
+      );
+    }
+    return Uint8List.fromList(data);
+  }
+
   /// Handles DioException and converts to appropriate AnalyzerException.
+  ///
+  /// Maps HTTP status codes and connection errors to descriptive exceptions.
   Never _handleDioException(
     DioException e,
     StackTrace stackTrace,
@@ -226,51 +224,16 @@ class ZipDownloader {
     if (statusCode != null) {
       switch (statusCode) {
         case 404:
-          throw AnalyzerException(
-            'Repository or ref not found: $owner/$repo@$ref',
-            code: AnalyzerErrorCode.repositoryNotFound,
-            details:
-                'The repository or specified ref (branch/SHA) does not exist.',
-            originalException: e,
-            stackTrace: stackTrace,
-          );
+          throw _buildNotFoundException(owner, repo, ref, e, stackTrace);
         case 403:
-          final responseBody =
-              e.response?.data?.toString() ?? 'No response body';
-          throw AnalyzerException(
-            'Access forbidden to $owner/$repo',
-            code: AnalyzerErrorCode.accessDenied,
-            details:
-                'GitHub returned 403 Forbidden. Possible causes:\n'
-                '1. Token lacks required permissions (needs "contents" read access)\n'
-                '2. Token does not have access to this repository\n'
-                '3. API rate limit exceeded\n'
-                '4. Repository is private and token is invalid\n\n'
-                'Response: $responseBody\n\n'
-                'Check your token at: https://github.com/settings/tokens',
-            originalException: e,
-            stackTrace: stackTrace,
-          );
+          throw _buildAccessDeniedException(e, stackTrace);
         case 401:
-          throw AnalyzerException(
-            'Authentication failed',
-            code: AnalyzerErrorCode.accessDenied,
-            details: 'Invalid or expired GitHub token',
-            originalException: e,
-            stackTrace: stackTrace,
-          );
+          throw _buildAuthenticationException(e, stackTrace);
         case 500:
         case 502:
         case 503:
         case 504:
-          throw AnalyzerException(
-            'GitHub server error',
-            code: AnalyzerErrorCode.networkError,
-            details:
-                'GitHub is experiencing issues (HTTP $statusCode). Please try again later.',
-            originalException: e,
-            stackTrace: stackTrace,
-          );
+          throw _buildServerErrorException(statusCode, e, stackTrace);
       }
     }
 
@@ -278,48 +241,139 @@ class ZipDownloader {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
-        throw AnalyzerException(
-          'Download timeout',
-          code: AnalyzerErrorCode.networkError,
-          details:
-              'The download request timed out. The repository may be too large or network is slow.',
-          originalException: e,
-          stackTrace: stackTrace,
-        );
+        throw _buildTimeoutException(e, stackTrace);
       case DioExceptionType.connectionError:
-        throw AnalyzerException(
-          'Connection error',
-          code: AnalyzerErrorCode.networkError,
-          details:
-              'Failed to connect to GitHub. Check your network connection.',
-          originalException: e,
-          stackTrace: stackTrace,
-        );
+        throw _buildConnectionException(e, stackTrace);
       case DioExceptionType.badCertificate:
-        throw AnalyzerException(
-          'SSL certificate error',
-          code: AnalyzerErrorCode.networkError,
-          details: 'Invalid SSL certificate',
-          originalException: e,
-          stackTrace: stackTrace,
-        );
+        throw _buildCertificateException(e, stackTrace);
       case DioExceptionType.cancel:
-        throw AnalyzerException(
-          'Download cancelled',
-          code: AnalyzerErrorCode.networkError,
-          details: 'The download was cancelled',
-          originalException: e,
-          stackTrace: stackTrace,
-        );
+        throw _buildCancelException(e, stackTrace);
       default:
-        throw AnalyzerException(
-          'Failed to download repository via $source',
-          code: AnalyzerErrorCode.networkError,
-          details: e.message ?? 'Unknown network error',
-          originalException: e,
-          stackTrace: stackTrace,
-        );
+        throw _buildGenericNetworkException(source, e, stackTrace);
     }
+  }
+
+  /// Builds exception for 404 Not Found.
+  Never _buildNotFoundException(
+    String owner,
+    String repo,
+    String ref,
+    DioException e,
+    StackTrace stackTrace,
+  ) {
+    throw AnalyzerException(
+      'Repository or ref not found: $owner/$repo@$ref',
+      code: AnalyzerErrorCode.repositoryNotFound,
+      details: 'The repository or specified ref (branch/SHA) does not exist.',
+      originalException: e,
+      stackTrace: stackTrace,
+    );
+  }
+
+  /// Builds exception for 403 Forbidden.
+  Never _buildAccessDeniedException(DioException e, StackTrace stackTrace) {
+    final responseBody = e.response?.data?.toString() ?? 'No response body';
+    throw AnalyzerException(
+      'Access forbidden',
+      code: AnalyzerErrorCode.accessDenied,
+      details:
+          'GitHub returned 403 Forbidden. Possible causes:\n'
+          '1. Token lacks required permissions (needs "contents" read access)\n'
+          '2. Token does not have access to this repository\n'
+          '3. API rate limit exceeded\n'
+          '4. Repository is private and token is invalid\n\n'
+          'Response: $responseBody\n\n'
+          'Check your token at: https://github.com/settings/tokens',
+      originalException: e,
+      stackTrace: stackTrace,
+    );
+  }
+
+  /// Builds exception for 401 Unauthorized.
+  Never _buildAuthenticationException(DioException e, StackTrace stackTrace) {
+    throw AnalyzerException(
+      'Authentication failed',
+      code: AnalyzerErrorCode.accessDenied,
+      details: 'Invalid or expired GitHub token',
+      originalException: e,
+      stackTrace: stackTrace,
+    );
+  }
+
+  /// Builds exception for 5xx server errors.
+  Never _buildServerErrorException(
+    int statusCode,
+    DioException e,
+    StackTrace stackTrace,
+  ) {
+    throw AnalyzerException(
+      'GitHub server error',
+      code: AnalyzerErrorCode.networkError,
+      details:
+          'GitHub is experiencing issues (HTTP $statusCode). Please try again later.',
+      originalException: e,
+      stackTrace: stackTrace,
+    );
+  }
+
+  /// Builds exception for timeout errors.
+  Never _buildTimeoutException(DioException e, StackTrace stackTrace) {
+    throw AnalyzerException(
+      'Download timeout',
+      code: AnalyzerErrorCode.networkError,
+      details:
+          'The download request timed out. The repository may be too large or network is slow.',
+      originalException: e,
+      stackTrace: stackTrace,
+    );
+  }
+
+  /// Builds exception for connection errors.
+  Never _buildConnectionException(DioException e, StackTrace stackTrace) {
+    throw AnalyzerException(
+      'Connection error',
+      code: AnalyzerErrorCode.networkError,
+      details: 'Failed to connect to GitHub. Check your network connection.',
+      originalException: e,
+      stackTrace: stackTrace,
+    );
+  }
+
+  /// Builds exception for SSL certificate errors.
+  Never _buildCertificateException(DioException e, StackTrace stackTrace) {
+    throw AnalyzerException(
+      'SSL certificate error',
+      code: AnalyzerErrorCode.networkError,
+      details: 'Invalid SSL certificate',
+      originalException: e,
+      stackTrace: stackTrace,
+    );
+  }
+
+  /// Builds exception for cancelled downloads.
+  Never _buildCancelException(DioException e, StackTrace stackTrace) {
+    throw AnalyzerException(
+      'Download cancelled',
+      code: AnalyzerErrorCode.networkError,
+      details: 'The download was cancelled',
+      originalException: e,
+      stackTrace: stackTrace,
+    );
+  }
+
+  /// Builds generic network exception.
+  Never _buildGenericNetworkException(
+    String source,
+    DioException e,
+    StackTrace stackTrace,
+  ) {
+    throw AnalyzerException(
+      'Failed to download repository via $source',
+      code: AnalyzerErrorCode.networkError,
+      details: e.message ?? 'Unknown network error',
+      originalException: e,
+      stackTrace: stackTrace,
+    );
   }
 
   /// Deprecated: Use [downloadRepositoryAsBytes] instead.
