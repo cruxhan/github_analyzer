@@ -9,10 +9,6 @@ import 'package:github_analyzer/src/models/repository_metadata.dart';
 import 'package:github_analyzer/src/models/analysis_statistics.dart';
 import 'package:github_analyzer/src/common/utils/directory_tree_generator.dart';
 
-/// Analyzes local file directories with optional incremental analysis.
-///
-/// Supports both full and incremental analysis modes. Falls back to full
-/// analysis if incremental analysis fails.
 class LocalAnalyzerService {
   final GithubAnalyzerConfig config;
   final RepositoryAnalyzer repositoryAnalyzer;
@@ -25,11 +21,6 @@ class LocalAnalyzerService {
            repositoryAnalyzer ?? RepositoryAnalyzer(config: config),
        incrementalAnalyzer = IncrementalAnalyzer(config: config);
 
-  /// Analyzes a local directory with optional incremental mode.
-  ///
-  /// If [previousResult] is provided, attempts incremental analysis. Falls back
-  /// to full analysis on failure. Returns comprehensive analysis result with
-  /// files, statistics, metadata, and dependencies.
   Future<AnalysisResult> analyze(
     String directoryPath, {
     AnalysisResult? previousResult,
@@ -49,7 +40,6 @@ class LocalAnalyzerService {
     return await _performFullAnalysis(directoryPath);
   }
 
-  /// Attempts incremental analysis, returns null if it fails.
   Future<AnalysisResult?> _tryIncrementalAnalysis(
     String directoryPath,
     AnalysisResult previousResult,
@@ -73,7 +63,6 @@ class LocalAnalyzerService {
     }
   }
 
-  /// Performs full analysis of the directory.
   Future<AnalysisResult> _performFullAnalysis(String directoryPath) async {
     final files = await repositoryAnalyzer.analyzeDirectory(directoryPath);
     final statistics = AnalysisStatistics.fromSourceFiles(files);
@@ -91,16 +80,13 @@ class LocalAnalyzerService {
     );
   }
 
-  /// Builds repository metadata from analysis data.
   RepositoryMetadata _buildMetadata(
     String directoryPath,
     List<dynamic> files,
     AnalysisStatistics statistics,
   ) {
     final primaryLanguage = _getPrimaryLanguage(statistics);
-
-    // ✅ 수정: List<dynamic>을 List<String>으로 변환
-    final filePaths = files.map((f) => f.path as String).toList();
+    final filePaths = _extractFilePaths(files);
 
     return RepositoryMetadata(
       name: path.basename(directoryPath),
@@ -118,12 +104,15 @@ class LocalAnalyzerService {
     );
   }
 
-  /// Extracts primary (most used) language from statistics.
   String? _getPrimaryLanguage(AnalysisStatistics statistics) {
     if (statistics.languageDistribution.isEmpty) return null;
 
     return statistics.languageDistribution.entries
         .reduce((a, b) => a.value > b.value ? a : b)
         .key;
+  }
+
+  List<String> _extractFilePaths(List<dynamic> files) {
+    return files.map((f) => f.path as String).toList();
   }
 }

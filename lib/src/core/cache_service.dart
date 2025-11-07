@@ -6,10 +6,6 @@ import 'package:github_analyzer/src/models/source_file.dart';
 import 'package:github_analyzer/src/models/analysis_result.dart';
 import 'package:github_analyzer/src/common/errors/analyzer_exception.dart';
 
-/// Manages caching of analysis results and individual files to disk.
-///
-/// Provides both repository-level and file-level caching with optional
-/// expiration. Uses SHA256 hashing for cache keys to ensure uniqueness.
 class CacheService {
   final String cacheDirectory;
   final Duration? maxAge;
@@ -19,9 +15,6 @@ class CacheService {
 
   CacheService({required this.cacheDirectory, this.maxAge});
 
-  /// Initializes the cache service and creates necessary directories.
-  ///
-  /// Throws [AnalyzerException] if directories cannot be created.
   Future<void> initialize() async {
     if (isInitialized) return;
 
@@ -59,21 +52,16 @@ class CacheService {
     }
   }
 
-  /// Generates a SHA256 hash cache key from repository URL and commit hash.
   String _generateCacheKey(String repositoryUrl, String commitHash) {
     final input = '$repositoryUrl:$commitHash';
     return sha256.convert(utf8.encode(input)).toString();
   }
 
-  /// Generates a SHA256 hash cache key for individual file.
   String _generateFileCacheKey(String filePath, String contentHash) {
     final input = '$filePath:$contentHash';
     return sha256.convert(utf8.encode(input)).toString();
   }
 
-  /// Retrieves a cached analysis result if available and not expired.
-  ///
-  /// Returns null if cache miss, expired, or corrupted (corrupted cache is deleted).
   Future<AnalysisResult?> get(String repositoryUrl, String commitHash) async {
     _checkInitialized();
 
@@ -98,9 +86,6 @@ class CacheService {
     );
   }
 
-  /// Saves an analysis result to cache.
-  ///
-  /// Throws [AnalyzerException] if write fails.
   Future<void> set(
     String repositoryUrl,
     String commitHash,
@@ -122,9 +107,6 @@ class CacheService {
     logger.info('Saved cache for $repositoryUrl (commit: $commitHash)');
   }
 
-  /// Retrieves a cached file analysis if available and not expired.
-  ///
-  /// Returns null on cache miss or corruption (corrupted cache is deleted).
   Future<SourceFile?> getFile(String filePath, String contentHash) async {
     _checkInitialized();
 
@@ -149,9 +131,6 @@ class CacheService {
     );
   }
 
-  /// Saves a file analysis to cache.
-  ///
-  /// Failures are logged but not thrown to prevent file analysis failure.
   Future<void> setFile(
     String filePath,
     String contentHash,
@@ -183,10 +162,7 @@ class CacheService {
     }
   }
 
-  /// Retrieves multiple files from cache.
-  ///
-  /// Returns map of successfully cached files. Errors are logged and skipped.
-  Future<Map<String, SourceFile>> getFiles(
+  Future<Map<String, SourceFile>> batchGetFiles(
     Map<String, String> filePathsToHashes,
   ) async {
     final cachedFiles = <String, SourceFile>{};
@@ -209,10 +185,7 @@ class CacheService {
     return cachedFiles;
   }
 
-  /// Saves multiple files to cache.
-  ///
-  /// Continues saving remaining files even if individual saves fail.
-  Future<void> setFiles(
+  Future<void> batchSetFiles(
     Map<String, String> filePathsToHashes,
     Map<String, SourceFile> sourceFiles,
   ) async {
@@ -235,7 +208,6 @@ class CacheService {
     }
   }
 
-  /// Deletes a specific repository cache entry.
   Future<void> delete(String repositoryUrl, String commitHash) async {
     final key = _generateCacheKey(repositoryUrl, commitHash);
     final cacheFile = File('$cacheDirectory/$key.json');
@@ -243,7 +215,6 @@ class CacheService {
     await _safeDelete(cacheFile, key, 'repository');
   }
 
-  /// Deletes a specific file cache entry.
   Future<void> deleteFile(String filePath, String contentHash) async {
     final key = _generateFileCacheKey(filePath, contentHash);
     final cacheFile = File('$cacheDirectory/$_fileCacheSubdir/$key.json');
@@ -251,9 +222,6 @@ class CacheService {
     await _safeDelete(cacheFile, key, 'file');
   }
 
-  /// Clears all cache entries (both repository and file-level).
-  ///
-  /// Throws [AnalyzerException] if clearing fails.
   Future<void> clear() async {
     final dir = Directory(cacheDirectory);
 
@@ -282,7 +250,6 @@ class CacheService {
     }
   }
 
-  /// Clears only file-level cache, not repository cache.
   Future<void> clearFileCache() async {
     final dir = Directory('$cacheDirectory/$_fileCacheSubdir');
 
@@ -304,7 +271,6 @@ class CacheService {
     }
   }
 
-  /// Returns cache statistics including size and entry counts.
   Future<Map<String, dynamic>> getStatistics() async {
     final dir = Directory(cacheDirectory);
 
@@ -349,7 +315,6 @@ class CacheService {
     }
   }
 
-  /// Checks if file exists, handling filesystem exceptions.
   Future<bool> _fileExists(File file) async {
     try {
       return await file.exists();
@@ -359,7 +324,6 @@ class CacheService {
     }
   }
 
-  /// Checks if cache entry is not expired.
   Future<bool> _isNotExpired(File cacheFile, String key) async {
     if (maxAge == null) return true;
 
@@ -377,9 +341,6 @@ class CacheService {
     }
   }
 
-  /// Reads and parses JSON file with error handling.
-  ///
-  /// On corruption, calls [onCorrupted] callback and returns null.
   Future<T?> _readJsonFile<T>(
     File cacheFile,
     String key,
@@ -409,9 +370,6 @@ class CacheService {
     }
   }
 
-  /// Writes JSON data to file with error handling.
-  ///
-  /// Throws [AnalyzerException] on critical failures.
   Future<void> _writeJsonFile(
     File cacheFile,
     String key,
@@ -456,7 +414,6 @@ class CacheService {
     }
   }
 
-  /// Safely deletes a cache file, logging but not throwing errors.
   Future<void> _safeDelete(File cacheFile, String key, String type) async {
     try {
       if (await cacheFile.exists()) {
@@ -468,13 +425,10 @@ class CacheService {
     }
   }
 
-  /// Checks if error is a permission error based on OS error code.
   bool _isPermissionError(FileSystemException e) {
-    return e.osError?.errorCode == 13 || // Unix: Permission denied
-        e.osError?.errorCode == 5; // Windows: Access denied
+    return e.osError?.errorCode == 13 || e.osError?.errorCode == 5;
   }
 
-  /// Throws cache error with permission-specific message.
   Never _throwCacheError(
     String title,
     String details,
@@ -503,7 +457,6 @@ class CacheService {
     );
   }
 
-  /// Returns empty statistics map.
   Map<String, dynamic> _emptyStatistics() {
     return {
       'totalFiles': 0,
@@ -513,7 +466,6 @@ class CacheService {
     };
   }
 
-  /// Checks if service is initialized, throws if not.
   void _checkInitialized() {
     if (!isInitialized) {
       throw AnalyzerException(

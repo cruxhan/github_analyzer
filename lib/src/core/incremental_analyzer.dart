@@ -10,11 +10,10 @@ import 'package:github_analyzer/src/common/utils/file_utils.dart';
 import 'package:github_analyzer/src/core/cache_service.dart';
 import 'package:github_analyzer/src/common/language_info.dart';
 
-/// Represents the changes detected between two analysis runs
 class FileChange {
-  final List<String> added; // 🔧 Generic type
-  final List<String> modified; // 🔧 Generic type
-  final List<String> deleted; // 🔧 Generic type
+  final List<String> added;
+  final List<String> modified;
+  final List<String> deleted;
 
   FileChange({
     required this.added,
@@ -22,21 +21,17 @@ class FileChange {
     required this.deleted,
   });
 
-  /// Returns true if no changes were detected
   bool get isEmpty => added.isEmpty && modified.isEmpty && deleted.isEmpty;
 
-  /// Total number of changed files
   int get length => added.length + modified.length + deleted.length;
 }
 
-/// Performs incremental analysis by comparing current state with previous result
 class IncrementalAnalyzer {
   final GithubAnalyzerConfig config;
   final CacheService? cacheService;
 
   IncrementalAnalyzer({required this.config, this.cacheService});
 
-  /// Analyzes a local directory based on previous analysis result
   Future<AnalysisResult> analyze(
     String directoryPath, {
     required AnalysisResult previousResult,
@@ -57,7 +52,6 @@ class IncrementalAnalyzer {
     return await _analyzeChanges(directoryPath, previousResult, changes);
   }
 
-  /// Analyzes with file-level caching support
   Future<AnalysisResult> analyzeWithCache(
     String directoryPath, {
     required AnalysisResult previousResult,
@@ -81,7 +75,6 @@ class IncrementalAnalyzer {
     );
   }
 
-  /// Analyzes changes with file-level caching
   Future<AnalysisResult> _analyzeChangesWithCache(
     String directoryPath,
     AnalysisResult previousResult,
@@ -91,12 +84,10 @@ class IncrementalAnalyzer {
       await cacheService!.initialize();
     }
     final fileMap = <String, SourceFile>{
-      // 🔧 Generic type
       for (var f in previousResult.files) f.path: f,
     };
 
-    // Calculate content hashes for changed files
-    final fileHashes = <String, String>{}; // 🔧 Generic type
+    final fileHashes = <String, String>{};
     for (final changedPath in [...changes.added, ...changes.modified]) {
       final file = File(path.join(directoryPath, changedPath));
       if (await file.exists()) {
@@ -106,12 +97,10 @@ class IncrementalAnalyzer {
       }
     }
 
-    // Try to load from cache
-    final cachedFiles = await cacheService!.getFiles(fileHashes);
+    final cachedFiles = await cacheService!.batchGetFiles(fileHashes);
     logger.info('Loaded ${cachedFiles.length} files from cache');
 
-    // Analyze non-cached files
-    final filesToAnalyze = <String>[]; // 🔧 Generic type
+    final filesToAnalyze = <String>[];
     for (final changedPath in [...changes.added, ...changes.modified]) {
       if (!cachedFiles.containsKey(changedPath)) {
         filesToAnalyze.add(changedPath);
@@ -120,8 +109,7 @@ class IncrementalAnalyzer {
       }
     }
 
-    // Analyze files that weren't cached
-    final newlyAnalyzed = <String, SourceFile>{}; // 🔧 Generic type
+    final newlyAnalyzed = <String, SourceFile>{};
     for (final changedPath in filesToAnalyze) {
       final file = File(path.join(directoryPath, changedPath));
       if (!await file.exists()) continue;
@@ -137,30 +125,23 @@ class IncrementalAnalyzer {
       }
     }
 
-    // Save newly analyzed files to cache
     if (newlyAnalyzed.isNotEmpty) {
-      final hashesForNewFiles = <String, String>{}; // 🔧 Generic type
+      final hashesForNewFiles = <String, String>{};
       for (final entry in newlyAnalyzed.entries) {
         if (fileHashes.containsKey(entry.key)) {
           hashesForNewFiles[entry.key] = fileHashes[entry.key]!;
         }
       }
-      await cacheService!.setFiles(hashesForNewFiles, newlyAnalyzed);
+      await cacheService!.batchSetFiles(hashesForNewFiles, newlyAnalyzed);
     }
 
-    // Remove deleted files
     for (final deletedPath in changes.deleted) {
       fileMap.remove(deletedPath);
     }
 
-    // Calculate final result
     final allFiles = fileMap.values.toList();
     final statistics = AnalysisStatistics.fromSourceFiles(allFiles);
-    final primaryLanguage = statistics.languageDistribution.isEmpty
-        ? null
-        : statistics.languageDistribution.entries
-              .reduce((a, b) => a.value > b.value ? a : b)
-              .key;
+    final primaryLanguage = _getPrimaryLanguage(statistics);
 
     final updatedMetadata = previousResult.metadata.copyWith(
       language: primaryLanguage,
@@ -178,18 +159,15 @@ class IncrementalAnalyzer {
     );
   }
 
-  /// Analyzes only the changed files and merges with previous result
   Future<AnalysisResult> _analyzeChanges(
     String directoryPath,
     AnalysisResult previousResult,
     FileChange changes,
   ) async {
     final fileMap = <String, SourceFile>{
-      // 🔧 Generic type
       for (var f in previousResult.files) f.path: f,
     };
 
-    // Process added and modified files
     for (final changedPath in [...changes.added, ...changes.modified]) {
       final file = File(path.join(directoryPath, changedPath));
       if (!await file.exists()) continue;
@@ -204,18 +182,13 @@ class IncrementalAnalyzer {
       }
     }
 
-    // Remove deleted files
     for (final deletedPath in changes.deleted) {
       fileMap.remove(deletedPath);
     }
 
     final allFiles = fileMap.values.toList();
     final statistics = AnalysisStatistics.fromSourceFiles(allFiles);
-    final primaryLanguage = statistics.languageDistribution.isEmpty
-        ? null
-        : statistics.languageDistribution.entries
-              .reduce((a, b) => a.value > b.value ? a : b)
-              .key;
+    final primaryLanguage = _getPrimaryLanguage(statistics);
 
     final updatedMetadata = previousResult.metadata.copyWith(
       language: primaryLanguage,
@@ -233,7 +206,6 @@ class IncrementalAnalyzer {
     );
   }
 
-  /// Analyzes a single file and returns SourceFile model
   Future<SourceFile?> _analyzeFile(File file, String relativePath) async {
     final stat = await file.stat();
     if (stat.size > config.maxFileSize) {
@@ -253,7 +225,6 @@ class IncrementalAnalyzer {
         logger.finer(
           'Failed to read file as text in incremental scan: $relativePath, error: $e',
         );
-        // Treat as binary if reading fails
         return SourceFile(
           path: relativePath,
           content: null,
@@ -284,13 +255,12 @@ class IncrementalAnalyzer {
     );
   }
 
-  /// Detects changes between current directory state and previous result
   Future<FileChange> _detectChanges(
     String directoryPath,
     AnalysisResult previousResult,
   ) async {
-    final added = <String>[]; // 🔧 Generic type
-    final modified = <String>[]; // 🔧 Generic type
+    final added = <String>[];
+    final modified = <String>[];
     final dir = Directory(directoryPath);
 
     if (!await dir.exists()) {
@@ -298,11 +268,10 @@ class IncrementalAnalyzer {
     }
 
     final previousFilesMap = <String, SourceFile>{
-      // 🔧 Generic type
       for (var f in previousResult.files) f.path: f,
     };
 
-    final currentFilePaths = <String>[]; // 🔧 Generic type
+    final currentFilePaths = <String>[];
 
     await for (final entity in dir.list(recursive: true)) {
       if (entity is File) {
@@ -330,5 +299,15 @@ class IncrementalAnalyzer {
         .toList();
 
     return FileChange(added: added, modified: modified, deleted: deleted);
+  }
+
+  String? _getPrimaryLanguage(AnalysisStatistics statistics) {
+    if (statistics.languageDistribution.isEmpty) {
+      return null;
+    }
+
+    return statistics.languageDistribution.entries
+        .reduce((a, b) => a.value > b.value ? a : b)
+        .key;
   }
 }

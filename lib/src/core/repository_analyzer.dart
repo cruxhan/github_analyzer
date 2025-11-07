@@ -12,10 +12,6 @@ import 'package:github_analyzer/src/common/utils/file_utils.dart';
 import 'package:github_analyzer/src/infrastructure/isolate_pool.dart';
 import 'package:github_analyzer/src/common/errors/analyzer_exception.dart';
 
-/// Analyzes repository files from local directories or archives.
-///
-/// Supports both sequential and parallel analysis using isolate pools,
-/// with configurable file filtering and size limits.
 class RepositoryAnalyzer {
   final GithubAnalyzerConfig config;
   final IsolatePool? isolatePool;
@@ -23,11 +19,6 @@ class RepositoryAnalyzer {
 
   RepositoryAnalyzer({required this.config, this.isolatePool});
 
-  /// Analyzes a local directory recursively and returns source files.
-  ///
-  /// Applies exclude patterns and automatically enables isolate pool
-  /// for large file counts. Throws [AnalyzerException] if directory
-  /// is not accessible.
   Future<List<SourceFile>> analyzeDirectory(String directoryPath) async {
     logger.info('Analyzing directory: $directoryPath');
     final dir = Directory(directoryPath);
@@ -84,10 +75,6 @@ class RepositoryAnalyzer {
     }
   }
 
-  /// Analyzes an archive in memory or using streaming mode.
-  ///
-  /// Automatically selects streaming for large archives to manage memory
-  /// efficiently. Throws [AnalyzerException] on corruption or out of memory.
   Future<List<SourceFile>> analyzeArchive(Archive archive) async {
     logger.info('Analyzing archive with ${archive.length} entries');
 
@@ -127,10 +114,6 @@ class RepositoryAnalyzer {
     }
   }
 
-  /// Processes archive files in batches to minimize memory pressure.
-  ///
-  /// Useful for large archives where processing all files at once
-  /// could cause memory issues.
   Future<List<SourceFile>> _analyzeArchiveStreaming(Archive archive) async {
     final files = <SourceFile>[];
     String? rootPrefix;
@@ -166,7 +149,6 @@ class RepositoryAnalyzer {
     return files;
   }
 
-  /// Processes a batch of archive files and returns analyzed results.
   Future<List<SourceFile>> _processBatch(
     List<ArchiveFile> batch,
     String? rootPrefix,
@@ -193,10 +175,6 @@ class RepositoryAnalyzer {
     return files;
   }
 
-  /// Analyzes archive files in memory without batching.
-  ///
-  /// Suitable for small to medium-sized archives where all files
-  /// can fit in memory simultaneously.
   Future<List<SourceFile>> _analyzeArchiveInMemory(Archive archive) async {
     final files = <SourceFile>[];
     String? rootPrefix;
@@ -229,13 +207,11 @@ class RepositoryAnalyzer {
     return files;
   }
 
-  /// Determines if isolate pool should be used based on file count.
   bool _shouldUseIsolatePool(int fileCount) {
     if (!config.enableIsolatePool) return false;
     return fileCount >= config.autoIsolatePoolThreshold;
   }
 
-  /// Calculates total size of all files in the archive.
   int _calculateArchiveSize(Archive archive) {
     int totalSize = 0;
     for (final file in archive.files) {
@@ -246,7 +222,6 @@ class RepositoryAnalyzer {
     return totalSize;
   }
 
-  /// Formats byte count into human-readable string.
   String _formatBytes(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
@@ -256,10 +231,6 @@ class RepositoryAnalyzer {
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 
-  /// Analyzes files in parallel using isolate pool for better performance.
-  ///
-  /// Each file is processed in a separate isolate. Falls back to sequential
-  /// analysis if parallel processing fails.
   Future<List<SourceFile>> _analyzeFilesInParallel(
     List<File> fileEntities,
     String basePath,
@@ -281,21 +252,19 @@ class RepositoryAnalyzer {
 
       final files = <SourceFile>[];
       for (int i = 0; i < results.length; i++) {
-        final result = results[i];
-        if (result is Map) {
-          if (result.containsKey('error')) {
-            final relativePath = path.relative(
-              fileEntities[i].path,
-              from: basePath,
-            );
-            _addError(
-              relativePath,
-              Exception(result['error'] as String),
-              StackTrace.fromString(result['stackTrace'] as String? ?? ''),
-            );
-          } else {
-            files.add(SourceFile.fromJson(Map<String, dynamic>.from(result)));
-          }
+        final result = _extractResult(results[i]);
+        if (result.isError) {
+          final relativePath = path.relative(
+            fileEntities[i].path,
+            from: basePath,
+          );
+          _addError(
+            relativePath,
+            Exception(result.errorMessage),
+            StackTrace.fromString(result.stackTrace),
+          );
+        } else if (result.sourceFile != null) {
+          files.add(result.sourceFile!);
         }
       }
       return files;
@@ -309,9 +278,6 @@ class RepositoryAnalyzer {
     }
   }
 
-  /// Analyzes files sequentially without parallelization.
-  ///
-  /// Used when isolate pool is disabled or file count is below threshold.
   Future<List<SourceFile>> _analyzeFilesSequentially(
     List<File> fileEntities,
     String basePath,
@@ -335,16 +301,12 @@ class RepositoryAnalyzer {
     return files;
   }
 
-  /// Analyzes a single file in a separate isolate.
-  ///
-  /// Used by the isolate pool for parallel processing. Returns serialized
-  /// SourceFile data or error information.
   static Future<dynamic> _analyzeFileInIsolate(
     Map<String, dynamic> args,
   ) async {
-    final String filePath = args['filePath'];
-    final String basePath = args['basePath'];
-    final int maxFileSize = args['maxFileSize'];
+    final filePath = _extractString(args, 'filePath');
+    final basePath = _extractString(args, 'basePath');
+    final maxFileSize = _extractInt(args, 'maxFileSize');
     final File file = File(filePath);
     final relativePath = path.relative(filePath, from: basePath);
 
@@ -391,10 +353,6 @@ class RepositoryAnalyzer {
     }
   }
 
-  /// Analyzes a single file from the file system.
-  ///
-  /// Handles text encoding errors gracefully by treating unreadable
-  /// files as binary. Returns null if file exceeds size limit.
   Future<SourceFile?> _analyzeFile(
     File file,
     String relativePath,
@@ -460,10 +418,6 @@ class RepositoryAnalyzer {
     }
   }
 
-  /// Analyzes a single file from an archive.
-  ///
-  /// Handles UTF-8 decode errors by treating unreadable content as binary.
-  /// Returns null if file exceeds size limit.
   Future<SourceFile?> _analyzeArchiveFile(
     ArchiveFile file,
     String relativePath,
@@ -533,9 +487,6 @@ class RepositoryAnalyzer {
     );
   }
 
-  /// Creates a SourceFile model from analyzed file data.
-  ///
-  /// Detects language and categorizes file type (source, config, documentation).
   static SourceFile _createFileModelFromData(
     String relativePath,
     int size,
@@ -563,7 +514,6 @@ class RepositoryAnalyzer {
     );
   }
 
-  /// Wrapper for [_createFileModelFromData] for archive files.
   static SourceFile _createFileModel(
     String relativePath,
     int size,
@@ -582,10 +532,6 @@ class RepositoryAnalyzer {
     );
   }
 
-  /// Strips root prefix from archive file path.
-  ///
-  /// Archives typically have a single root directory. This method extracts
-  /// the relative path by removing the prefix.
   String _stripRootPrefix(String filePath, String? rootPrefix) {
     if (rootPrefix == null || rootPrefix.isEmpty) {
       return filePath;
@@ -599,17 +545,11 @@ class RepositoryAnalyzer {
     return filePath;
   }
 
-  /// Detects the root directory prefix in archive paths.
-  ///
-  /// Archives typically have a root folder. This method extracts it.
   String _detectRootPrefix(String path) {
     final parts = path.split('/');
     return parts.length > 1 ? '${parts[0]}/' : '';
   }
 
-  /// Records an error that occurred during analysis.
-  ///
-  /// Centralizes error handling to ensure consistency across all analysis methods.
   void _addError(String relativePath, Object e, StackTrace stackTrace) {
     logger.warning('Failed to analyze file: $relativePath', e, stackTrace);
     _errors.add(
@@ -622,9 +562,72 @@ class RepositoryAnalyzer {
     );
   }
 
-  /// Returns an unmodifiable list of all errors encountered during analysis.
   List<AnalysisError> getErrors() => List.unmodifiable(_errors);
 
-  /// Clears all accumulated errors.
   void clearErrors() => _errors.clear();
+
+  static String _extractString(Map<String, dynamic> map, String key) {
+    final value = map[key];
+    if (value is String) return value;
+    throw TypeError();
+  }
+
+  static int _extractInt(Map<String, dynamic> map, String key) {
+    final value = map[key];
+    if (value is int) return value;
+    throw TypeError();
+  }
+
+  static _IsolateResult _extractResult(dynamic result) {
+    if (result == null) {
+      return _IsolateResult.empty();
+    }
+    if (result is Map) {
+      final map = result as Map<String, dynamic>;
+      if (map.containsKey('error')) {
+        return _IsolateResult.error(
+          map['error'] as String,
+          map['stackTrace'] as String? ?? '',
+        );
+      } else {
+        return _IsolateResult.success(SourceFile.fromJson(map));
+      }
+    }
+    return _IsolateResult.empty();
+  }
+}
+
+class _IsolateResult {
+  final SourceFile? sourceFile;
+  final String errorMessage;
+  final String stackTrace;
+  final bool isError;
+
+  _IsolateResult({
+    required this.sourceFile,
+    required this.errorMessage,
+    required this.stackTrace,
+    required this.isError,
+  });
+
+  factory _IsolateResult.empty() => _IsolateResult(
+    sourceFile: null,
+    errorMessage: '',
+    stackTrace: '',
+    isError: false,
+  );
+
+  factory _IsolateResult.success(SourceFile file) => _IsolateResult(
+    sourceFile: file,
+    errorMessage: '',
+    stackTrace: '',
+    isError: false,
+  );
+
+  factory _IsolateResult.error(String error, String st) => _IsolateResult(
+    sourceFile: null,
+    errorMessage: error,
+    stackTrace: st,
+    isError: true,
+  );
 }

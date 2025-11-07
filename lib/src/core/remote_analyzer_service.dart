@@ -11,10 +11,6 @@ import 'package:github_analyzer/src/data/providers/zip_downloader.dart';
 import 'package:github_analyzer/src/common/utils/directory_tree_generator.dart';
 import 'package:github_analyzer/src/infrastructure/interfaces/i_github_api_provider.dart';
 
-/// Analyzes remote GitHub repositories and generates code analysis results.
-///
-/// This service handles downloading, extracting, and analyzing repository
-/// archives with optional caching and progress tracking.
 class RemoteAnalyzerService {
   final GithubAnalyzerConfig config;
   final IGithubApiProvider apiProvider;
@@ -30,7 +26,6 @@ class RemoteAnalyzerService {
     this.progressController,
   });
 
-  /// Returns a copy of this service with updated fields.
   RemoteAnalyzerService copyWith({
     GithubAnalyzerConfig? config,
     IGithubApiProvider? apiProvider,
@@ -47,14 +42,6 @@ class RemoteAnalyzerService {
     );
   }
 
-  /// Analyzes a remote repository at the specified [repositoryUrl].
-  ///
-  /// The [branch] parameter specifies which branch to analyze. If omitted,
-  /// the repository's default branch is used with token, or automatic
-  /// fallback branches are tried without token.
-  ///
-  /// Returns cached results if [useCache] is true and a valid cache exists.
-  /// Throws [AnalyzerException] if the analysis fails.
   Future<AnalysisResult> analyze({
     required String repositoryUrl,
     String? branch,
@@ -115,14 +102,21 @@ class RemoteAnalyzerService {
       logger.info('Files analyzed: ${files.length}');
 
       _emitProgress(0.9, 'Generating statistics', AnalysisPhase.analyzing);
+      final statistics = AnalysisStatistics.fromSourceFiles(files);
+
       final result = await _buildAnalysisResult(
-        metadata,
+        _buildMetadata(
+          metadata,
+          owner,
+          repo,
+          targetBranch,
+          commitSha,
+          statistics,
+          files.length,
+        ),
         files,
+        statistics,
         repositoryAnalyzer,
-        owner,
-        repo,
-        targetBranch,
-        commitSha,
       );
 
       await _cacheResult(
@@ -159,10 +153,6 @@ class RemoteAnalyzerService {
     }
   }
 
-  /// Resolves the target branch and retrieves repository metadata.
-  ///
-  /// Uses GitHub API if [config.githubToken] is available, otherwise
-  /// attempts automatic branch detection from a predefined list.
   Future<Map<String, dynamic>> _resolveBranchAndMetadata(
     String owner,
     String repo,
@@ -218,10 +208,6 @@ class RemoteAnalyzerService {
     };
   }
 
-  /// Checks the cache and returns cached result if available.
-  ///
-  /// Returns null if caching is disabled, cache is uninitialized, or no
-  /// valid cached result exists.
   Future<AnalysisResult?> _checkCache(
     String repositoryUrl,
     String owner,
@@ -257,46 +243,50 @@ class RemoteAnalyzerService {
     return null;
   }
 
-  /// Builds the analysis result from extracted files and metadata.
-  ///
-  /// Generates statistics, identifies primary language, and creates
-  /// repository metadata.
-  Future<AnalysisResult> _buildAnalysisResult(
+  RepositoryMetadata _buildMetadata(
     RepositoryMetadata? metadata,
-    List<SourceFile> files,
-    RepositoryAnalyzer repositoryAnalyzer,
     String owner,
     String repo,
     String targetBranch,
     String? commitSha,
-  ) async {
-    final statistics = AnalysisStatistics.fromSourceFiles(files);
+    AnalysisStatistics statistics,
+    int fileCount,
+  ) {
     final primaryLanguage = _getPrimaryLanguage(statistics);
 
-    final finalMetadata =
-        metadata?.copyWith(
-          language: primaryLanguage,
-          languages: statistics.languageDistribution.keys.toList(),
-          fileCount: files.length,
-          commitSha: commitSha,
-        ) ??
-        RepositoryMetadata(
-          name: repo,
-          fullName: '$owner/$repo',
-          description: 'Public repository (analyzed without token)',
-          isPrivate: false,
-          defaultBranch: targetBranch,
-          language: primaryLanguage,
-          languages: statistics.languageDistribution.keys.toList(),
-          stars: 0,
-          forks: 0,
-          fileCount: files.length,
-          commitSha: commitSha,
-          directoryTree: DirectoryTreeGenerator.generate(
-            files.map((f) => f.path).toList(),
-          ),
-        );
+    if (metadata != null) {
+      return metadata.copyWith(
+        language: primaryLanguage,
+        languages: statistics.languageDistribution.keys.toList(),
+        fileCount: fileCount,
+        commitSha: commitSha,
+      );
+    }
 
+    return RepositoryMetadata(
+      name: repo,
+      fullName: '$owner/$repo',
+      description: 'Public repository (analyzed without token)',
+      isPrivate: false,
+      defaultBranch: targetBranch,
+      language: primaryLanguage,
+      languages: statistics.languageDistribution.keys.toList(),
+      stars: 0,
+      forks: 0,
+      fileCount: fileCount,
+      commitSha: commitSha,
+      directoryTree: DirectoryTreeGenerator.generate(
+        _extractFilePaths(statistics),
+      ),
+    );
+  }
+
+  Future<AnalysisResult> _buildAnalysisResult(
+    RepositoryMetadata finalMetadata,
+    List<SourceFile> files,
+    AnalysisStatistics statistics,
+    RepositoryAnalyzer repositoryAnalyzer,
+  ) async {
     return AnalysisResult(
       metadata: finalMetadata,
       files: files,
@@ -307,7 +297,6 @@ class RemoteAnalyzerService {
     );
   }
 
-  /// Saves the analysis result to cache with appropriate cache key.
   Future<void> _cacheResult(
     String repositoryUrl,
     String owner,
@@ -326,7 +315,6 @@ class RemoteAnalyzerService {
     logger.info('Result cached with key: $cacheKey');
   }
 
-  /// Returns the most frequently used language in the statistics.
   String? _getPrimaryLanguage(AnalysisStatistics statistics) {
     if (statistics.languageDistribution.isEmpty) {
       return null;
@@ -337,10 +325,10 @@ class RemoteAnalyzerService {
         .key;
   }
 
-  /// Attempts to detect repository's default branch without authentication.
-  ///
-  /// Tries main, master, develop, development, and trunk in order.
-  /// Returns the first branch that exists, or 'main' if all fail.
+  List<String> _extractFilePaths(AnalysisStatistics statistics) {
+    return statistics.languageDistribution.keys.toList();
+  }
+
   Future<String> _tryFallbackBranches(String owner, String repo) async {
     final branches = ['main', 'master', 'develop', 'development', 'trunk'];
 
@@ -378,7 +366,6 @@ class RemoteAnalyzerService {
     return 'main';
   }
 
-  /// Emits a progress update with the specified progress level and message.
   void _emitProgress(double progress, String message, AnalysisPhase phase) {
     progressController?.add(
       AnalysisProgress(

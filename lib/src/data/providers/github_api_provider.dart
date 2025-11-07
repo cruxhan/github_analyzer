@@ -5,16 +5,11 @@ import 'package:github_analyzer/src/infrastructure/interfaces/i_http_client_mana
 import 'package:github_analyzer/src/infrastructure/interfaces/i_github_api_provider.dart';
 import 'package:github_analyzer/src/models/repository_metadata.dart';
 
-/// Provides access to the GitHub API for fetching repository metadata.
 class GithubApiProvider implements IGithubApiProvider {
   final String? token;
   final IHttpClientManager httpClientManager;
 
-  /// Creates an instance of [GithubApiProvider].
-  GithubApiProvider({
-    this.token,
-    required this.httpClientManager,
-  });
+  GithubApiProvider({this.token, required this.httpClientManager});
 
   @override
   Future<RepositoryMetadata> getRepositoryMetadata(
@@ -29,14 +24,13 @@ class GithubApiProvider implements IGithubApiProvider {
     };
 
     try {
-      final response = await httpClientManager.get(
-        uri,
-        headers: headers,
-        responseType: ResponseType.json,
-      );
+      final results = await Future.wait([
+        _fetchRepoData(uri, headers),
+        _fetchLanguagesData(owner, repo, headers),
+      ]);
 
-      final json = response.data as Map<String, dynamic>;
-      final languages = await _fetchLanguages(owner, repo, headers);
+      final json = results[0] as Map<String, dynamic>;
+      final languages = results[1] as List<String>;
 
       return RepositoryMetadata(
         name: json['name'] as String,
@@ -55,7 +49,6 @@ class GithubApiProvider implements IGithubApiProvider {
     } on DioException catch (e, stackTrace) {
       return _handleDioException(e, stackTrace, owner, repo);
     } on FormatException catch (e, stackTrace) {
-      // 🆕 JSON 파싱 에러 처리
       logger.severe('Failed to parse repository metadata JSON.', e, stackTrace);
       throw AnalyzerException(
         'Invalid JSON response from GitHub API',
@@ -65,9 +58,11 @@ class GithubApiProvider implements IGithubApiProvider {
         stackTrace: stackTrace,
       );
     } on TypeError catch (e, stackTrace) {
-      // 🆕 타입 에러 처리
       logger.severe(
-          'Type error while processing repository metadata.', e, stackTrace);
+        'Type error while processing repository metadata.',
+        e,
+        stackTrace,
+      );
       throw AnalyzerException(
         'Unexpected data structure in API response',
         code: AnalyzerErrorCode.analysisError,
@@ -86,17 +81,72 @@ class GithubApiProvider implements IGithubApiProvider {
     }
   }
 
-  /// 🆕 DioException 세분화 처리
+  Future<Map<String, dynamic>> _fetchRepoData(
+    Uri uri,
+    Map<String, String> headers,
+  ) async {
+    final response = await httpClientManager.get(
+      uri,
+      headers: headers,
+      responseType: ResponseType.json,
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  Future<List<String>> _fetchLanguagesData(
+    String owner,
+    String repo,
+    Map<String, String> headers,
+  ) async {
+    try {
+      final languagesUri = Uri.parse(
+        'https://api.github.com/repos/$owner/$repo/languages',
+      );
+      final languagesResponse = await httpClientManager.get(
+        languagesUri,
+        headers: headers,
+        responseType: ResponseType.json,
+      );
+
+      if (languagesResponse.statusCode == 200) {
+        final languagesJson = languagesResponse.data as Map<String, dynamic>;
+        return languagesJson.keys.toList();
+      }
+    } on DioException catch (e, stackTrace) {
+      logger.warning(
+        'Could not fetch repository languages (${e.type.name}). Proceeding without it.',
+        e,
+        stackTrace,
+      );
+    } on FormatException catch (e, stackTrace) {
+      logger.warning(
+        'Failed to parse languages JSON. Proceeding without it.',
+        e,
+        stackTrace,
+      );
+    } catch (e, stackTrace) {
+      logger.warning(
+        'Unexpected error fetching languages. Proceeding without it.',
+        e,
+        stackTrace,
+      );
+    }
+
+    return [];
+  }
+
   Never _handleDioException(
     DioException e,
     StackTrace stackTrace,
     String owner,
     String repo,
   ) {
-    logger.severe('DioException occurred while fetching repository metadata.',
-        e, stackTrace);
+    logger.severe(
+      'DioException occurred while fetching repository metadata.',
+      e,
+      stackTrace,
+    );
 
-    // HTTP 상태 코드별 처리
     final statusCode = e.response?.statusCode;
     if (statusCode != null) {
       switch (statusCode) {
@@ -112,7 +162,8 @@ class GithubApiProvider implements IGithubApiProvider {
           throw AnalyzerException(
             'Access forbidden to $owner/$repo',
             code: AnalyzerErrorCode.accessDenied,
-            details: 'Check your token permissions or rate limits. '
+            details:
+                'Check your token permissions or rate limits. '
                 'You may have exceeded the API rate limit.',
             originalException: e,
             stackTrace: stackTrace,
@@ -140,7 +191,6 @@ class GithubApiProvider implements IGithubApiProvider {
       }
     }
 
-    // DioException 타입별 처리
     switch (e.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
@@ -189,48 +239,6 @@ class GithubApiProvider implements IGithubApiProvider {
     }
   }
 
-  Future<List<String>> _fetchLanguages(
-    String owner,
-    String repo,
-    Map<String, String> headers,
-  ) async {
-    try {
-      final languagesUri =
-          Uri.parse('https://api.github.com/repos/$owner/$repo/languages');
-      final languagesResponse = await httpClientManager.get(
-        languagesUri,
-        headers: headers,
-        responseType: ResponseType.json,
-      );
-
-      if (languagesResponse.statusCode == 200) {
-        final languagesJson = languagesResponse.data as Map<String, dynamic>;
-        return languagesJson.keys.toList();
-      }
-    } on DioException catch (e, stackTrace) {
-      // 🆕 구체적 에러 로깅
-      logger.warning(
-        'Could not fetch repository languages (${e.type.name}). Proceeding without it.',
-        e,
-        stackTrace,
-      );
-    } on FormatException catch (e, stackTrace) {
-      logger.warning(
-        'Failed to parse languages JSON. Proceeding without it.',
-        e,
-        stackTrace,
-      );
-    } catch (e, stackTrace) {
-      logger.warning(
-        'Unexpected error fetching languages. Proceeding without it.',
-        e,
-        stackTrace,
-      );
-    }
-
-    return [];
-  }
-
   @override
   Future<String?> getCommitShaForBranch(
     String owner,
@@ -265,7 +273,6 @@ class GithubApiProvider implements IGithubApiProvider {
         return sha;
       }
     } on DioException catch (e, stackTrace) {
-      // 🆕 구체적 에러 타입 로깅
       logger.warning(
         'Could not fetch branch information for $branch (${e.type.name}). Proceeding without commit SHA.',
         e,
@@ -289,7 +296,5 @@ class GithubApiProvider implements IGithubApiProvider {
   }
 
   @override
-  void dispose() {
-    // HttpClientManager is disposed by the GithubAnalyzer class
-  }
+  void dispose() {}
 }

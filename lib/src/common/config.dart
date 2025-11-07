@@ -1,11 +1,5 @@
 import 'package:github_analyzer/src/common/constants.dart';
 
-/// Configuration for repository analyzer behavior and performance tuning.
-///
-/// Controls analysis settings, caching, concurrency, resource limits,
-/// and optimization options. Create instances using factory constructors
-/// like [create], [quick], or [forLLM] for preset configurations.
-
 class GithubAnalyzerConfig {
   final String? githubToken;
   final List<String> excludePatterns;
@@ -49,9 +43,6 @@ class GithubAnalyzerConfig {
     this.streamingModeThreshold = 50 * 1024 * 1024,
   });
 
-  /// Validates all configuration parameters for correctness.
-  ///
-  /// Throws [ArgumentError] if any parameter is invalid.
   static void _validateConfig({
     required int maxFileSize,
     required int maxConcurrentRequests,
@@ -68,69 +59,66 @@ class GithubAnalyzerConfig {
     _validateRange(maxConcurrentRequests, 'maxConcurrentRequests', 1, 20);
     _validateRange(isolatePoolSize, 'isolatePoolSize', 1, 16);
     _validateRange(maxRetries, 'maxRetries', 0, 10);
-    _validateNonNegative(retryDelay.inSeconds, 'retryDelay', 60);
-    _validateNonNegative(cacheDuration.inSeconds, 'cacheDuration');
+    _validateDuration(retryDelay, 'retryDelay', 60);
+    _validateDuration(cacheDuration, 'cacheDuration');
     _validateNonNegative(maxTotalFiles, 'maxTotalFiles');
-    _validateNonEmpty(cacheDirectory, 'cacheDirectory');
-    _validateNotContains(cacheDirectory, '..', 'cacheDirectory');
+    _validateString(cacheDirectory, 'cacheDirectory', forbiddenChars: '..');
     _validateNonNegative(autoIsolatePoolThreshold, 'autoIsolatePoolThreshold');
     _validatePositive(streamingModeThreshold, 'streamingModeThreshold');
   }
 
-  /// Validates that value is positive (> 0).
   static void _validatePositive(int value, String name) {
     if (value <= 0) {
       throw ArgumentError.value(value, name, 'Must be greater than 0');
     }
   }
 
-  /// Validates that value is in the specified range [min, max].
   static void _validateRange(int value, String name, int min, int max) {
     if (value < min || value > max) {
       throw ArgumentError.value(value, name, 'Must be between $min and $max');
     }
   }
 
-  /// Validates that value is non-negative and within max seconds.
-  static void _validateNonNegative(
-    int seconds,
+  static void _validateNonNegative(int value, String name) {
+    if (value < 0) {
+      throw ArgumentError.value(value, name, 'Must not be negative');
+    }
+  }
+
+  static void _validateDuration(
+    Duration value,
     String name, [
     int? maxSeconds,
   ]) {
-    if (seconds < 0) {
-      throw ArgumentError.value(seconds, name, 'Must not be negative');
+    if (value.inSeconds < 0) {
+      throw ArgumentError.value(value, name, 'Must not be negative');
     }
-    if (maxSeconds != null && seconds > maxSeconds) {
+    if (maxSeconds != null && value.inSeconds > maxSeconds) {
       throw ArgumentError.value(
-        seconds,
+        value,
         name,
         'Must be $maxSeconds seconds or less',
       );
     }
   }
 
-  /// Validates that string is not empty.
-  static void _validateNonEmpty(String value, String name) {
+  static void _validateString(
+    String value,
+    String name, {
+    String? forbiddenChars,
+  }) {
     if (value.isEmpty) {
       throw ArgumentError.value(value, name, 'Must not be empty');
     }
-  }
-
-  /// Validates that string does not contain forbidden characters.
-  static void _validateNotContains(
-    String value,
-    String forbidden,
-    String name,
-  ) {
-    if (value.contains(forbidden)) {
-      throw ArgumentError.value(value, name, 'Must not contain "$forbidden"');
+    if (forbiddenChars != null && value.contains(forbiddenChars)) {
+      throw ArgumentError.value(
+        value,
+        name,
+        'Must not contain "$forbiddenChars"',
+      );
     }
   }
 
-  /// Creates default configuration with custom parameters.
-  ///
-  /// Validates all parameters and returns a configured instance.
-  /// Use preset factories [quick] or [forLLM] for common configurations.
   static Future<GithubAnalyzerConfig> create({
     String? githubToken,
     List<String>? excludePatterns,
@@ -191,7 +179,6 @@ class GithubAnalyzerConfig {
     );
   }
 
-  /// Synchronous factory for quick configuration without async overhead.
   factory GithubAnalyzerConfig({
     String? githubToken,
     List<String>? excludePatterns,
@@ -252,10 +239,6 @@ class GithubAnalyzerConfig {
     );
   }
 
-  /// Preset configuration optimized for fast analysis.
-  ///
-  /// Disables caching and parallelization for speed.
-  /// Limits file count to 100.
   static Future<GithubAnalyzerConfig> quick({
     String? githubToken,
     List<String>? excludePatterns,
@@ -283,18 +266,12 @@ class GithubAnalyzerConfig {
     );
   }
 
-  /// Preset configuration optimized for LLM context generation.
-  ///
-  /// Enables caching and parallelization with customizable file limit.
-  /// Excludes test and example directories by default.
   static Future<GithubAnalyzerConfig> forLLM({
     String? githubToken,
     List<String>? excludePatterns,
     int maxFiles = 200,
   }) async {
-    if (maxFiles < 0) {
-      throw ArgumentError.value(maxFiles, 'maxFiles', 'Must be 0 or greater');
-    }
+    _validateNonNegative(maxFiles, 'maxFiles');
 
     return GithubAnalyzerConfig._private(
       githubToken: githubToken,
@@ -326,7 +303,6 @@ class GithubAnalyzerConfig {
     );
   }
 
-  /// Returns effective exclude patterns including generated file patterns.
   List<String> get effectiveExcludePatterns {
     if (!excludeGeneratedFiles) return excludePatterns;
 
@@ -343,12 +319,10 @@ class GithubAnalyzerConfig {
     ];
   }
 
-  /// Determines if streaming mode should be used based on estimated size.
   bool shouldUseStreamingMode({required int estimatedSize}) {
     return estimatedSize >= streamingModeThreshold;
   }
 
-  /// Checks if configuration is valid without throwing errors.
   bool get isValid {
     try {
       _validateConfig(

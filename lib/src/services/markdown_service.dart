@@ -1,7 +1,6 @@
 import 'package:github_analyzer/src/models/analysis_result.dart';
 import 'package:github_analyzer/src/infrastructure/file_system/file_system.dart';
 
-/// Configuration for markdown generation
 class MarkdownConfig {
   final int? maxFiles;
   final int? maxContentSize;
@@ -25,66 +24,49 @@ class MarkdownConfig {
   );
 }
 
-/// Service for generating markdown formatted output from analysis results
-///
-/// This service handles the business logic of creating markdown documentation
-/// from repository analysis results.
 class MarkdownService {
   final IFileSystem _fs = getFileSystem();
 
-  /// Generates and writes markdown directly to a file asynchronously
-  ///
-  /// Parameters:
-  /// - [result]: The analysis result to convert to markdown
-  /// - [outputPath]: The file path where markdown will be written
-  /// - [config]: Configuration for markdown generation behavior
   Future<void> generateToFile(
     AnalysisResult result,
     String outputPath, {
     MarkdownConfig config = MarkdownConfig.standard,
   }) async {
     final buffer = StringBuffer();
-    _writeHeaderSync(buffer, result);
-    _writeMetadataSync(buffer, result);
-    _writeStatisticsSync(buffer, result, config);
-    _writeDirectoryTreeSync(buffer, result);
-    _writeLanguageDistributionSync(buffer, result);
-    _writeMainFilesSync(buffer, result);
-    _writeDependenciesSync(buffer, result);
+    _appendHeader(buffer, result);
+    _appendMetadata(buffer, result);
+    _appendStatistics(buffer, result, config);
+    _appendDirectoryTree(buffer, result);
+    _appendLanguageDistribution(buffer, result);
+    _appendMainFiles(buffer, result);
+    _appendDependencies(buffer, result);
     if (config.includeErrors) {
-      _writeErrorsSync(buffer, result);
+      _appendErrors(buffer, result);
     }
-    _writeSourceCodeSync(buffer, result, config);
+    _appendSourceCode(buffer, result, config);
     await _fs.writeFile(outputPath, buffer.toString());
   }
 
-  /// Generates markdown string synchronously
-  ///
-  /// Parameters:
-  /// - [result]: The analysis result to convert to markdown
-  /// - [config]: Configuration for markdown generation behavior
-  ///
-  /// Returns the generated markdown as a string
   String generate(
     AnalysisResult result, {
     MarkdownConfig config = MarkdownConfig.standard,
   }) {
     final buffer = StringBuffer();
-    _writeHeaderSync(buffer, result);
-    _writeMetadataSync(buffer, result);
-    _writeStatisticsSync(buffer, result, config);
-    _writeDirectoryTreeSync(buffer, result);
-    _writeLanguageDistributionSync(buffer, result);
-    _writeMainFilesSync(buffer, result);
-    _writeDependenciesSync(buffer, result);
+    _appendHeader(buffer, result);
+    _appendMetadata(buffer, result);
+    _appendStatistics(buffer, result, config);
+    _appendDirectoryTree(buffer, result);
+    _appendLanguageDistribution(buffer, result);
+    _appendMainFiles(buffer, result);
+    _appendDependencies(buffer, result);
     if (config.includeErrors) {
-      _writeErrorsSync(buffer, result);
+      _appendErrors(buffer, result);
     }
-    _writeSourceCodeSync(buffer, result, config);
+    _appendSourceCode(buffer, result, config);
     return buffer.toString();
   }
 
-  void _writeHeaderSync(StringBuffer buffer, AnalysisResult result) {
+  void _appendHeader(StringBuffer buffer, AnalysisResult result) {
     buffer.writeln('# ${result.metadata.name}');
     buffer.writeln();
     if (result.metadata.description != null &&
@@ -94,12 +76,12 @@ class MarkdownService {
     }
   }
 
-  void _writeMetadataSync(StringBuffer buffer, AnalysisResult result) {
+  void _appendMetadata(StringBuffer buffer, AnalysisResult result) {
     buffer.writeln('## Repository Information');
     buffer.writeln();
     final meta = result.metadata;
     if (meta.fullName != null) {
-      buffer.writeln('**Repository:** `${meta.fullName}`');
+      buffer.writeln('**Repository:** +${meta.fullName}+');
     }
 
     final info = <String>[];
@@ -113,7 +95,7 @@ class MarkdownService {
     buffer.writeln();
   }
 
-  void _writeStatisticsSync(
+  void _appendStatistics(
     StringBuffer buffer,
     AnalysisResult result,
     MarkdownConfig config,
@@ -131,7 +113,7 @@ class MarkdownService {
     buffer.writeln();
   }
 
-  void _writeDirectoryTreeSync(StringBuffer buffer, AnalysisResult result) {
+  void _appendDirectoryTree(StringBuffer buffer, AnalysisResult result) {
     if (result.metadata.directoryTree.isEmpty) return;
     buffer.writeln('## Directory Structure');
     buffer.writeln();
@@ -141,10 +123,7 @@ class MarkdownService {
     buffer.writeln();
   }
 
-  void _writeLanguageDistributionSync(
-    StringBuffer buffer,
-    AnalysisResult result,
-  ) {
+  void _appendLanguageDistribution(StringBuffer buffer, AnalysisResult result) {
     if (result.statistics.languageDistribution.isEmpty) return;
     buffer.writeln('## Language Distribution');
     buffer.writeln();
@@ -158,17 +137,17 @@ class MarkdownService {
     buffer.writeln();
   }
 
-  void _writeMainFilesSync(StringBuffer buffer, AnalysisResult result) {
+  void _appendMainFiles(StringBuffer buffer, AnalysisResult result) {
     if (result.mainFiles.isEmpty) return;
     buffer.writeln('## Main Entry Points');
     buffer.writeln();
     for (final file in result.mainFiles) {
-      buffer.writeln('- `$file`');
+      buffer.writeln('- +$file+');
     }
     buffer.writeln();
   }
 
-  void _writeDependenciesSync(StringBuffer buffer, AnalysisResult result) {
+  void _appendDependencies(StringBuffer buffer, AnalysisResult result) {
     if (result.dependencies.isEmpty) return;
     buffer.writeln('## Dependencies');
     buffer.writeln();
@@ -182,7 +161,7 @@ class MarkdownService {
     }
   }
 
-  void _writeErrorsSync(StringBuffer buffer, AnalysisResult result) {
+  void _appendErrors(StringBuffer buffer, AnalysisResult result) {
     if (result.errors.isEmpty) return;
     buffer.writeln('## Analysis Errors');
     buffer.writeln();
@@ -192,7 +171,7 @@ class MarkdownService {
     buffer.writeln();
   }
 
-  void _writeSourceCodeSync(
+  void _appendSourceCode(
     StringBuffer buffer,
     AnalysisResult result,
     MarkdownConfig config,
@@ -232,7 +211,7 @@ class MarkdownService {
       }
 
       final language = file.language ?? '';
-      buffer.writeln('```$language');
+      buffer.writeln('```$language```');
       buffer.writeln(content);
       buffer.writeln('```');
       buffer.writeln();
