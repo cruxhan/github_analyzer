@@ -1,6 +1,16 @@
 name: github_analyzer
 description: "Analyze GitHub repositories and generate AI context for LLMs with cross-platform support"
 version: 1.0.0
+topics:
+  - github
+  - analyzer
+  - llm
+  - ai
+  - code-analysis
+  - chatgpt
+  - claude
+  - repository
+
 
 homepage: https://github.com/cruxhan/github_analyzer
 repository: https://github.com/cruxhan/github_analyzer
